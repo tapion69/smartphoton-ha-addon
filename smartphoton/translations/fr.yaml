@@ -1,0 +1,135 @@
+configuration:
+  licence:
+    name: Licence
+    description: >-
+      Eregistrer votre licence sur https://domosimple.eu/licence.php. (voir documentation)
+  onduleur:
+    name: Choix de l'onduleur
+    description: >-
+      Choisir votre type d'onduleur.
+  listonduleur:
+    name: Liste des onduleurs
+    description: >-
+      Choix du port usb ou ip de l'onduleur. ("false" pour ne pas l'utiliser) 
+  interval:
+    name: Intervalle pour l'onduleur (en seconde)
+    description: >-
+      Intervalle en seconde pour chaque communication avec l’onduleur (déconseillé de baisser en dessous de 2 secondes)
+  listbatterie:
+    name: Liste des Batteries
+    description: >-
+      Choix du port usb ou ip de la batterie. ("false" pour ne pas l'utiliser)
+    fields:
+      chemin:
+        name: Adresse
+        description: >-
+          false, USB: /dev/serial/by-id/usb, Ip: 192.168.1.252:8888
+  intervalBatt:
+    name: Intervalle pour les batteries (en seconde)
+    description: >-
+      Intervalle en seconde pour chaque communication avec les batteries (déconseillé de baisser en dessous de 7 secondes)
+      
+  nameEntities:
+    name: Nom des entités
+    description: >-
+      Choisir des noms personnalisés pour les entités affichées.
+    fields:
+      nameOnduleur:
+        name: Nom de l'onduleur
+      namePV:
+        name: Nom de la puissance PV
+      namePV2:
+        name: Nom de la puissance PV2
+      nameBatt_charge:
+        name: Nom de la charge batterie
+      nameBatt_batt_decharge:
+        name: Nom de la décharge batterie
+      nameBatt_batt_chargedecharge:
+        name: Nom de la charge/décharge batterie
+      nameConso_maison:
+        name: Nom de la consommation maison
+      nameGrid_power:
+        name: Nom de la consommation réseau
+      nameGridTension:
+        name: Nom de la tension réseau
+      nameBattTensiont:
+        name: Nom de la tension batterie
+      namePvTensiont:
+        name: Nom de la tension PV
+      namePv2Tensiont:
+        name: Nom de la tension PV2
+      nameOnduleurTension:
+        name: Nom de la tension onduleur
+      nameDataFrequency:
+        name: Nom de la fréquence des données
+      nameOnduleurFrequency:
+        name: Nom de la fréquence onduleur
+      namePvIntensite:
+        name: Nom de l’intensité PV
+      namePv2Intensite:
+        name: Nom de l’intensité PV2
+      nameBattChargeIntensite:
+        name: Nom de l’intensité de charge batterie
+      nameBattDechargeIntensite:
+        name: Nom de l’intensité de décharge batterie
+      nameBattCapacite:
+        name: Nom de la capacité batterie
+      nameMode:
+        name: Nom du mode solaire
+      nameTemp:
+        name: Nom de la température
+      nameParam01:
+        name: Nom du paramètre priorité alimentation
+      nameParam02:
+        name: Nom du paramètre courant de charge total
+      nameParam05:
+        name: Nom du type de batterie
+      nameParam11:
+        name: Nom du courant de charge EDF
+      nameParam12:
+        name: Nom de la tension de passage EDF
+      nameParam13:
+        name: Nom de la tension de retour batterie
+      nameParam16:
+        name: Nom de la priorité de charge batterie
+      nameParam26:
+        name: Nom de la tension de charge en vrac
+      nameParam27:
+        name: Nom de la tension de charge flottante
+      nameParam29:
+        name: Nom de la basse tension de coupure DC
+
+  batterie:
+    name: Choix de la Batterie
+    description: >-
+      Choisir le type de batterie.
+  mqtt:
+    name: Paramètres MQTT
+  usbbatterie:
+    name: Choix port usb de la batterie
+    description: >-
+      Choisir le port usb de la batterie. ("false" pour ne pas l'utiliser)
+  elfinonduleur:
+    name: Activer le elfin
+    description: >-
+      Activer le elfin pour l'onduleur (usb sera désactivé)
+  elfinonduleurip:
+    name: Adresse elfin Onduleur
+    description: >-
+      Adresse ip du elfin de l'onduleur.
+  elfinonduleurport:
+    name: Port elfin Onduleur
+    description: >-
+      Port du elfin de l'onduleur.
+  elfinbatterie:
+    name: Activer le elfin
+    description: >-
+      Activer le elfin pour la batterie (usb sera désactivé)
+  elfinbatterieip:
+    name: Adresse elfin batterie
+    description: >-
+      Adresse ip du elfin de la batterie.
+  elfinbatterieport:
+    name: Port elfin batterie
+    description: >-
+      Port du elfin de la batterie.
