@@ -32,7 +32,6 @@ map:
   - share:rw
   - ssl
 options: 
-  licence: ""
   listonduleur:
     - chemin: "false"
       type: serial
@@ -94,7 +93,6 @@ options:
   keyfile: privkey.pem
 schema:
   #onduleur: list(voltronic|easun)
-  licence: str
   listonduleur:
     - chemin: str
       type: list(false|ip|serial)?
