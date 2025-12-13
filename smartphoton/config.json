@@ -1,6 +1,6 @@
 {
   "name": "Smartphoton",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "slug": "smartphoton",
   "description": "Integration Smartphoton pour Home Assistant",
   "arch": ["armhf", "armv7", "aarch64", "amd64", "i386"],
