@@ -1,0 +1,12 @@
+{
+  "name": "Smartphoton",
+  "version": "3.0.0",
+  "slug": "smartphoton",
+  "description": "Integration Smartphoton pour Home Assistant",
+  "arch": ["armhf", "armv7", "aarch64", "amd64", "i386"],
+  "startup": "application",
+  "boot": "auto",
+  "options": {},
+  "schema": {},
+  "image": "ghcr.io/tapion69/smartphoton-ha-addon"
+}
