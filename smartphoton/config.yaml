@@ -1,0 +1,162 @@
+---
+name: Smartphoton
+version: 2.0.4
+slug: smartphoton
+description: Smartphoton
+url: https://domosimple.eu/
+ingress: false
+#ingress_port: 1890
+ingress_stream: false
+panel_icon: mdi:sitemap
+init: false
+homeassistant: 2023.3.0
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+ports:
+  1890/tcp: 1890
+ports_description:
+  1890/tcp: Web interface
+hassio_api: true
+hassio_role: manager
+homeassistant_api: true
+host_network: true
+auth_api: true
+uart: true
+map:
+  - config:rw
+  - media:rw
+  - share:rw
+  - ssl
+options: 
+  licence: ""
+  listonduleur:
+    - chemin: "false"
+      type: serial
+      onduleur: voltronic
+      multionduleur: false
+      battTension: 48
+      full: true
+  interval: 5
+  debug: false
+  listbatterie:
+    - chemin: "false"
+      type: serial
+      batterie: pylontech
+      nbSlave: 1
+  intervalBatt: 9
+  mqtt:
+    mqttadresse: ""
+    mqttport: ""
+    mqttuser: ""
+    mqttpass: ""
+  nameEntities:
+    nameOnduleur: "Onduleur"
+    namePV: "PV Puissance (Watt)"
+    namePV2: "PV2 Puissance (Watt)"
+    nameBatt_charge: "Batt Charge (Watt)"
+    nameBatt_batt_decharge: "Batt deharge (Watt)"
+    nameBatt_batt_chargedecharge: "Batt Charge et Decharge (watt)"
+    nameConso_maison: "Conso Maison (Watt)"
+    nameGrid_power: "Conso Réseau (Watt)"
+    nameGridTension: "Grid Tension (Volt)"
+    nameBattTensiont: "Batterie Voltage (Volt)"
+    namePvTensiont: "PV Voltage (Volt)"
+    namePv2Tensiont: "PV2 Voltage (Volt)"
+    nameOnduleurTension: "Onduleur Tension (Volt)"
+    nameDataFrequency: "Data Frequency (Hz)"
+    nameOnduleurFrequency: "Onduleur-Frequency (Hz)"
+    namePvIntensite: "Pv Intensite (Amp)"
+    namePv2Intensite: "Pv2 Intensite (Amp)"
+    nameBattChargeIntensite: "Batt Charge Intensite (Amp)"
+    nameBattDechargeIntensite: "Batt Decharge Intensite (Amp)"
+    nameBattCapacite: "Batterie Capacité"
+    nameMode: "Mode Solaire"
+    nameTemp: "Temperature (°)"
+    nameParam01: "Priorité alimentation"
+    nameParam02: "Courant de charge total"
+    nameParam05: "Type de batterie"
+    nameParam11: "Courant de charge EDF"
+    nameParam12: "Tension passage edf"
+    nameParam13: "Tension retour batterie"
+    nameParam16: "Priorité charge batterie"
+    nameParam26: "Tension de charge en vrac"
+    nameParam27: "Tension de charge flottante"
+    nameParam29: "Basse tension coupure DC"
+  #lovelace: false
+  #panneaux: "panneaux"
+  batteries: "batteries"
+  ssl: false
+  certfile: fullchain.pem
+  keyfile: privkey.pem
+schema:
+  #onduleur: list(voltronic|easun)
+  licence: str
+  listonduleur:
+    - chemin: str
+      type: list(false|ip|serial)?
+      #onduleur: list(false|voltronic|easun|growattspf|growattSPH)?
+      onduleur: list(false|voltronic)?
+      multionduleur: bool?
+      battTension: list(48|24|12)?
+      full: bool?
+  interval: float(0.5,10)
+  debug: bool
+  listbatterie:
+    - chemin: "str"
+      type: list(false|ip|serial|rs485)?
+      batterie: list(false|pylontech|jkbms)?
+      nbSlave: int?
+  intervalBatt: int
+  mqtt:
+    mqttadresse: str?
+    mqttport: port?
+    mqttuser: str?
+    mqttpass: password?
+  nameEntities:
+    nameOnduleur: str
+    namePV: str
+    namePV2: str
+    nameBatt_charge: str
+    nameBatt_batt_decharge: str
+    nameBatt_batt_chargedecharge: str
+    nameConso_maison: str
+    nameGrid_power: str
+    nameGridTension: str
+    nameBattTensiont: str
+    namePvTensiont: str
+    namePv2Tensiont: str
+    nameOnduleurTension: str
+    nameDataFrequency: str
+    nameOnduleurFrequency: str
+    namePvIntensite: str
+    namePv2Intensite: str
+    nameBattChargeIntensite: str
+    nameBattDechargeIntensite: str
+    nameBattCapacite: str
+    nameMode: str
+    nameTemp: str
+    nameParam01: str
+    nameParam02: str
+    nameParam05: str
+    nameParam11: str
+    nameParam12: str
+    nameParam13: str
+    nameParam16: str
+    nameParam26: str
+    nameParam27: str
+    nameParam29: str
+  log_level: list(trace|debug|info|notice|warning|error|fatal)?
+  #lovelace: bool
+  #panneaux: str
+  batteries: str
+  ssl: bool
+  certfile: str
+  keyfile: str
+  not_need: "str?"
+  leave_front_door_open: bool?
+  safe_mode: bool?
+  max_old_space_size: int?
