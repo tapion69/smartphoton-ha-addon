@@ -1,4 +1,74 @@
+## 2.0.06
+- Modification parametre 11
+	  
+## 2.0.05
+- **Ajout QDOP**
+  - **Attention non testé**, ajout des paramètres :
 
+    - **--PBCC<nnn>** : Définir la capacité de recharge de la batterie
+      - L'unité est le pourcentage (%) allant de 5 à 95.
+
+    - **--PBDC<nnn>** : Définir la capacité de décharge de la batterie
+      - L'unité est le pourcentage (%) allant de 10 à 100.
+
+    - **--PSDC<nnn>** : Définir la capacité de coupure de la batterie
+      - L'unité est le pourcentage (%) allant de 0 à 90.
+
+
+
+## 2.0.04
+- Correction Debug
+
+## 2.0.03
+- Ajout d'un warning en cas de valeur trop courte pour éviter les Time Out.
+
+## 2.0.02
+/*Voltronic*/
+- Mise à niveau des requêtes pour une meilleure fiabilité.
+- Protection contre les requêtes trop rapprochées afin d’éviter les erreurs.
+- Remontée plus fréquente des informations de production.
+- Rafraîchissement automatique après toute modification des paramètres.
+
+## 2.0.01
+- Correction du paramètre 5 pour Voltronic.
+
+## 2.0.00
+- Ajout de JKBMS basé sur JL.
+- Optimisation du module.
+- Mise à jour de la documentation.
+
+## 1.4.00
+- Ajout de la licence, enregistrez votre licence sur [domosimple.eu/licence.php](https://domosimple.eu/licence.php).
+- Ajout du calcul CRC.
+- Ajout de la création de capteurs HA (Appareil MQTT → SmartPhoton → Redémarrer HA).
+- Ajout du capteur de consommation réseau (compatible avec les nouveaux onduleurs).
+- Ajout de l'intervalle de temps entre chaque communication pour l'onduleur en secondes (par défaut 2 secondes).
+- Ajout d'un intervalle de requêtes suivant l'intervalle de communication.
+- Ajout des modes Charge, Bypass et Eco.
+- Ajout d’un deuxième MQTT sur des onduleurs différents.
+- Ajout du contrôle des LEDs.
+- Ajout de la configuration de la date et de l'heure de l'onduleur à partir du serveur.
+- Ajout de commandes personnalisées.
+- Ajout d'attributs sur les codes d'erreur.
+- Ajout du numéro de version et du modèle.
+- Ajout des options 130 et 140 au paramètre charge maximale.
+- Ajout du mode debug.
+- Ajout de la version "Full" ou "min".
+- Ajout de la vérification de communication.
+- Ajout d'attributs Stats Batterie sur le Life Cycle Correction Voltronic.
+- Organisation de la gestion des erreurs.
+- Modification des options des paramètres 12 et 13 Voltronic à 0.1.
+- Vérification des données Voltronic.
+- Alerte : signalement et tentative de reconnexion suite à un problème de communication.
+- Remplacement des variables globales de noms.
+- Remplacement des variables globales de paramètres.
+- Remplacement des variables globales MQTT.
+- Remplacement des noms des onduleurs.
+- Mise à jour vers Node.js : 0.2.5.
+- Mise à jour de Node-RED : 4.0.3.
+- Refonte de la configuration des variables globales.
+- Ajout de la configuration pour le minimum de commande.
+- Suppression du QPGS.
 
 ## 1.3.11
 - mise a jour vers nodejs:0.2.4
