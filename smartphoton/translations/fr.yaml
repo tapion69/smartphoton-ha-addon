@@ -1,4 +1,8 @@
 configuration:
+  licence:
+    name: Licence
+    description: >-
+      Eregistrer votre licence sur https://domosimple.eu/licence.php. (voir documentation)
   onduleur:
     name: Choix de l'onduleur
     description: >-
