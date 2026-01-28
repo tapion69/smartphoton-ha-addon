@@ -32,7 +32,6 @@ map:
   - share:rw
   - ssl
 options: 
-  licence: ""
   listonduleur:
     - chemin: "false"
       type: serial
