@@ -1,6 +1,6 @@
 ---
 name: Smartphoton
-version: 3.0.1
+version: 2.0.6-r1
 slug: smartphoton
 description: Smartphoton
 url: https://domosimple.eu/
@@ -32,6 +32,7 @@ map:
   - share:rw
   - ssl
 options: 
+  licence: ""
   listonduleur:
     - chemin: "false"
       type: serial
@@ -93,6 +94,7 @@ options:
   keyfile: privkey.pem
 schema:
   #onduleur: list(voltronic|easun)
+  licence: str
   listonduleur:
     - chemin: str
       type: list(false|ip|serial)?
@@ -158,3 +160,4 @@ schema:
   leave_front_door_open: bool?
   safe_mode: bool?
   max_old_space_size: int?
+
