@@ -7,10 +7,11 @@ Smartphoton est un addon de gestion d'onduleurs et de batteries
 
 **Batterie**
 * [x] Pylontech
+* [x] JKBMS
 
 **Tension Batterie**
 * [x] 48 volt
-* [x] 24 volt (non testé)
+* [x] 24 volt
 * [ ] 12 volt
 
 <br /><br />
@@ -24,6 +25,7 @@ comparaison avec l’installation de tout autre module complémentaire Home Assi
 1. Ajouter le dépot "https://github.com/jean-luc1203/smartphoton-ha-addon/" dans la boutique des modules complémentaires
 1. Cliquez sur le bouton "Installer" pour installer le module complémentaire..
 1. Configurer votre installation dans le menu configuration.
+1. Enregistrement de votre licence ici : [Smartphoton licence][addon-licence]
 1. Démarrez le module complémentaire "Smartphoton".
 1. Vérifiez les journaux de "Smartphoton" pour voir si tout s'est bien passé.
 
@@ -33,14 +35,17 @@ Vous pouvez vous aider du [Smartphoton Configuration][addon-config] pour votre y
 ---
 ## Onduleur
 ---  
-   
+### Option: `Licence`
+Enregistrement de votre licence ici :
+[Smartphoton licence][addon-licence]
+
 
 ### Option: `Choix port Liste Onduleur ou listonduleur`
 Choisir du port usb de d'onduleur. ("false" pour ne pas l'utiliser)<br />
 Chemin : ip ou serial. (<ip>:<port>) ou /dev/serial/by-id/<nom du serial><br />
-Type : ip ou serial<br />
+Type : ip, rs485 ou serial<br />
 Onduleur : choix de la batterie. false ou voltronic<br />
-multionduleur : Utilisation des qpgs.<br />
+multionduleur : Utilisation des qpgs. (Cette option n'est plus disponnible)<br />
 battTension : Tension des batterie branché sur l'onduleur<br />
 
 
@@ -70,15 +75,51 @@ ou pour une communication avec onduleur en ip ou elfin
 <br /><br />
 **Options disponibles**
 
-| Nom | valeur par défaut | obligatoire | options |
-|:--- |:---:|:---:|:--- |
-| chemin | false | oui | Adresse ip, chemin serial|
-| type | serial | oui | ip, serial |
-| onduleur | voltronic | oui | voltronic |
-| multionduleur | true | non | true, false |
-| battTension | 48 | non | 48, 24, 12 |
+<table width="100%" cellspacing="0" cellpadding="6" border="1">
+  <thead>
+    <tr>
+      <th>Clé</th>
+      <th>chemin</th>
+      <th>type</th>
+      <th>onduleur</th>
+      <th>battTension</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Nom</strong></td>
+      <td>chemin</td>
+      <td>type</td>
+      <td>onduleur</td>
+      <td>battTension</td>
+    </tr>
+    <tr>
+      <td><strong>Valeur par défaut</strong></td>
+      <td>false</td>
+      <td>serial</td>
+      <td>voltronic</td>
+      <td>48</td>
+    </tr>
+    <tr>
+      <td><strong>Obligatoire</strong></td>
+      <td>oui</td>
+      <td>oui</td>
+      <td>oui</td>
+      <td>non</td>
+    </tr>
+    <tr>
+      <td><strong>Options</strong></td>
+      <td>Adresse ip<br /> chemin serial</td>
+      <td>ip<br /> serial</td>
+      <td>voltronic</td>
+      <td>48<br /> 24<br /> 12</td>
+    </tr>
+  </tbody>
+</table>
 
 
+**Intervalle** <br />
+Temps d'attente en secondes entre chaque requête. Remarque : évitez de descendre en dessous de 1. Si vous avez des timeouts fréquents, augmentez ce nombre. 
 
 <br /><br />
 ---
@@ -90,6 +131,7 @@ Choisir du port usb de la batterie. ("false" pour ne pas l'utiliser)<br />
 Chemin : ip ou serial. (<ip>:<port>) ou /dev/serial/by-id/<nom du serial><br />
 Type : ip ou serial<br />
 Batterie : choix de la batterie. false ou pylontech<br />
+nbSlave : Nombre de batterie en esclave (jkbms seulement)
 
 
 <br /><br />
@@ -116,13 +158,62 @@ ou pour une communication avec batterie en ip ou elfin
 <br /><br />
 **Options disponibles**
 
-| Nom | valeur par défaut | obligatoire | options |
-|:--- |:---:|:---:|:--- |
-| chemin | false | oui | Adresse ip, chemin serial|
-| type | serial | oui | ip, serial |
-| batterie | pylontech | oui | false,pylontech |
+<table width="100%" cellspacing="0" cellpadding="6" border="1">
+  <thead>
+    <tr>
+      <th>Clé</th>
+      <th>Chemin</th>
+      <th>Type</th>
+      <th>Batterie</th>
+      <th>NbSlave</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Nom</strong></td>
+      <td>chemin</td>
+      <td>type</td>
+      <td>batterie</td>
+      <td>nbSlave</td>
+    </tr>
+    <tr>
+      <td><strong>Valeur par défaut</strong></td>
+      <td>false</td>
+      <td>serial</td>
+      <td>pylontech</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td><strong>Obligatoire</strong></td>
+      <td>oui</td>
+      <td>oui</td>
+      <td>oui</td>
+      <td>non</td>
+    </tr>
+    <tr>
+      <td><strong>Pylontech</strong></td>
+      <td>Adresse IP<br /> chemin serial</td>
+      <td>ip<br /> serial</td>
+      <td>false<br /> pylontech</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td><strong>JKBMS</strong></td>
+      <td>Adresse IP,<br /> chemin serial</td>
+      <td>ip<br /> rs485</td>
+      <td>false<br /> jkbms</td>
+      <td>1<br /> à <br /> 15</td>
+    </tr>
+  </tbody>
+</table>
 
 
+**Intervalle** <br />
+Temps d'attente en secondes entre chaque requête. Remarque : évitez de descendre en dessous de 6. Si vous avez des timeouts fréquents, augmentez ce nombre. 
+
+
+**JKBMS** <br />
+Les commandes sont affiché mais ne sont pas activé
 <br /><br />
 ---
 ## Nom des entités ou nameEntities
@@ -147,45 +238,7 @@ Il sera ensuite indispenssable d'ajouter intégration mqtt (voir doc mqtt)
 
 **mqttpass** mot de passe de connexion
 <br /><br />
----
-## Autres options
----
-### Option: `Log Level`
-The `log_level` option controls the level of log output by the addon and can
-be changed to be more or less verbose, which might be useful when you are
-dealing with an unknown issue. Possible values are:
 
-- `trace`: Show every detail, like all called internal functions.
-- `debug`: Shows detailed debug information.
-- `info`: Normal (usually) interesting events.
-- `warning`: Exceptional occurrences that are not errors.
-- `error`: Runtime errors that do not require immediate action.
-- `fatal`: Something went terribly wrong. Add-on becomes unusable.
-
-Please note that each level automatically includes log messages from a
-more severe level, e.g., `debug` also shows `info` messages. By default,
-the `log_level` is set to `info`, which is the recommended setting unless
-you are troubleshooting.
-
-### Option: `ssl` (non testé)
-
-Enables/Disables SSL (HTTPS) on the web interface.
-Set it `true` to enable it, `false` otherwise.
-
-**Note**: _The SSL settings only apply to direct access and has no effect
-on the Ingress service._
-
-### Option: `certfile`
-
-The certificate file to use for SSL.
-
-**Note**: _The file MUST be stored in `/ssl/`, which is the default_
-
-### Option: `keyfile`
-
-The private key file to use for SSL.
-
-**Note**: _The file MUST be stored in `/ssl/`, which is the default_
 
 
 ## Changelog & Releases
@@ -212,32 +265,8 @@ Smartphoton, Jean-luc / Alexis / Romain / Khamel / Samuel
 
 The original setup of this repository is by [Franck Nijhof][frenck].
 
-For a full list of all authors and contributors,
-check [the contributor's page][contributors].
 
-## License
----
-MIT License
 
-Copyright (c) 2018-2023 Franck Nijhof
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 
 [addon-badge]: https://my.home-assistant.io/badges/supervisor_addon.svg
 [addon-config]: http://domosimple.eu/onduleur/
