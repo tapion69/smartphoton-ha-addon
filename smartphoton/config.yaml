@@ -10,6 +10,17 @@ arch:
   - amd64
   - i386
 init: false
+
+# ⚠️ AJOUTER CES LIGNES :
+devices:
+  - /dev/ttyUSB0
+  - /dev/ttyUSB1
+  - /dev/ttyUSB2
+  - /dev/serial/by-id
+uart: true
+privileged:
+  - SYS_RAWIO
+
 map:
   - share:rw
 ports:
@@ -36,4 +47,3 @@ schema:
   mqtt_password: password?
   polling_fast: int(3,30)
   polling_slow: int(60,1800)
-# SUPPRIMER la ligne "image:" !
