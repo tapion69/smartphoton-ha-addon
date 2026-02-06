@@ -1,0 +1,62 @@
+#!/usr/bin/with-contenv bashio
+# ==============================================================================
+# Start Node-RED with dynamic flows generation
+# ==============================================================================
+
+bashio::log.info "Démarrage de Voltronic MQTT..."
+
+# Lire les options de configuration
+SERIAL_PORT_1=$(bashio::config 'serial_port_1')
+SERIAL_PORT_2=$(bashio::config 'serial_port_2')
+SERIAL_PORT_3=$(bashio::config 'serial_port_3')
+MQTT_BROKER=$(bashio::config 'mqtt_broker')
+MQTT_PORT=$(bashio::config 'mqtt_port')
+MQTT_USER=$(bashio::config 'mqtt_user')
+MQTT_PASSWORD=$(bashio::config 'mqtt_password')
+POLLING_FAST=$(bashio::config 'polling_fast')
+POLLING_SLOW=$(bashio::config 'polling_slow')
+
+bashio::log.info "Configuration:"
+bashio::log.info "  Serial Port 1: ${SERIAL_PORT_1}"
+if [ -n "${SERIAL_PORT_2}" ]; then
+    bashio::log.info "  Serial Port 2: ${SERIAL_PORT_2}"
+fi
+if [ -n "${SERIAL_PORT_3}" ]; then
+    bashio::log.info "  Serial Port 3: ${SERIAL_PORT_3}"
+fi
+bashio::log.info "  MQTT Broker: ${MQTT_BROKER}:${MQTT_PORT}"
+bashio::log.info "  Polling rapide: ${POLLING_FAST}s"
+bashio::log.info "  Polling lent: ${POLLING_SLOW}s"
+
+# Créer le tableau des ports série pour le flows.json
+SERIAL_PORTS_JS="[\"${SERIAL_PORT_1}\""
+if [ -n "${SERIAL_PORT_2}" ]; then
+    SERIAL_PORTS_JS="${SERIAL_PORTS_JS}, \"${SERIAL_PORT_2}\""
+fi
+if [ -n "${SERIAL_PORT_3}" ]; then
+    SERIAL_PORTS_JS="${SERIAL_PORTS_JS}, \"${SERIAL_PORT_3}\""
+fi
+SERIAL_PORTS_JS="${SERIAL_PORTS_JS}]"
+
+bashio::log.info "Génération du flows.json..."
+
+# Générer le flows.json depuis le template
+sed -e "s|{{SERIAL_PORTS}}|${SERIAL_PORTS_JS}|g" \
+    -e "s|{{MQTT_BROKER}}|${MQTT_BROKER}|g" \
+    -e "s|{{MQTT_PORT}}|${MQTT_PORT}|g" \
+    -e "s|{{MQTT_USER}}|${MQTT_USER}|g" \
+    -e "s|{{MQTT_PASSWORD}}|${MQTT_PASSWORD}|g" \
+    -e "s|{{POLLING_FAST}}|${POLLING_FAST}|g" \
+    -e "s|{{POLLING_SLOW}}|${POLLING_SLOW}|g" \
+    /etc/nodered/flows-template.json > /data/nodered/flows.json
+
+# Copier le settings.js
+cp /etc/nodered/settings.js /data/nodered/settings.js
+
+bashio::log.info "Lancement de Node-RED..."
+
+# Démarrer Node-RED
+exec node-red \
+    --settings /data/nodered/settings.js \
+    --userDir /data/nodered \
+    /data/nodered/flows.json

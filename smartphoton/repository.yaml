@@ -1,0 +1,27 @@
+# Home Assistant Add-on Repository
+
+## Description
+
+Repository pour l'add-on **Voltronic MQTT** - Gestionnaire d'onduleurs Voltronic avec auto-découverte MQTT.
+
+## Installation
+
+Ajoutez ce repository dans Home Assistant :
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FVOTRE-USERNAME%2Fvoltronic-mqtt-addon)
+
+Ou manuellement :
+
+1. **Supervisor** → **Add-on Store** → Menu (⋮) → **Repositories**
+2. Ajouter : `https://github.com/VOTRE-USERNAME/voltronic-mqtt-addon`
+3. Installer "Voltronic MQTT"
+
+## Add-ons disponibles
+
+### Voltronic MQTT
+
+Gestionnaire complet pour onduleurs Voltronic (Axpert MAX, VMIV, MKSIV) avec :
+- Auto-découverte MQTT
+- Support multi-onduleurs
+- Plus de 100 entités par onduleur
+- Configuration via interface HA
