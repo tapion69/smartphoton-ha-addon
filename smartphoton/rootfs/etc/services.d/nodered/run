@@ -33,14 +33,25 @@ mkdir -p /data/nodered
 
 bashio::log.info "Génération du flows.json..."
 
+# Exporter les variables pour Python
+export SERIAL_PORT_1
+export SERIAL_PORT_2
+export SERIAL_PORT_3
+export MQTT_BROKER
+export MQTT_PORT
+export MQTT_USER
+export MQTT_PASSWORD
+export POLLING_FAST
+export POLLING_SLOW
+
 # Utiliser Python pour générer le flows.json
 python3 << 'PYTHON_SCRIPT'
 import json
 import os
 import sys
 
-# Récupérer les variables d'environnement passées par bash
-serial_port_1 = os.environ.get('SERIAL_PORT_1', '')
+# Récupérer les variables d'environnement
+serial_port_1 = os.environ.get('SERIAL_PORT_1', '/dev/ttyUSB0')
 serial_port_2 = os.environ.get('SERIAL_PORT_2', '')
 serial_port_3 = os.environ.get('SERIAL_PORT_3', '')
 mqtt_broker = os.environ.get('MQTT_BROKER', 'localhost')
@@ -50,10 +61,13 @@ mqtt_password = os.environ.get('MQTT_PASSWORD', '')
 polling_fast = os.environ.get('POLLING_FAST', '5')
 polling_slow = os.environ.get('POLLING_SLOW', '300')
 
+print(f"Python: Serial Port 1 = {serial_port_1}")
+print(f"Python: MQTT Broker = {mqtt_broker}:{mqtt_port}")
+
 # Lire le template
 try:
     with open('/etc/nodered/flows-template.json', 'r') as f:
-        flows = json.load(f)
+        content = f.read()
 except Exception as e:
     print(f"Erreur lecture template: {e}")
     sys.exit(1)
@@ -65,44 +79,38 @@ if serial_port_2:
 if serial_port_3:
     serial_ports.append(serial_port_3)
 
-serial_ports_json = json.dumps(serial_ports)
+# Remplacer TOUS les placeholders dans le texte brut
+# (plus fiable que de parser le JSON)
+content = content.replace('{{SERIAL_PORTS}}', json.dumps(serial_ports))
+content = content.replace('{{SERIAL_PORT_1}}', serial_port_1)
+content = content.replace('{{SERIAL_PORT_2}}', serial_port_2 if serial_port_2 else '/dev/ttyUSB1')
+content = content.replace('{{SERIAL_PORT_3}}', serial_port_3 if serial_port_3 else '/dev/ttyUSB2')
+content = content.replace('{{MQTT_BROKER}}', mqtt_broker)
+content = content.replace('{{MQTT_PORT}}', mqtt_port)
+content = content.replace('{{MQTT_USER}}', mqtt_user)
+content = content.replace('{{MQTT_PASSWORD}}', mqtt_password)
+content = content.replace('{{POLLING_FAST}}', polling_fast)
+content = content.replace('{{POLLING_SLOW}}', polling_slow)
 
-# Fonction récursive pour remplacer les placeholders
-def replace_placeholders(obj):
-    if isinstance(obj, dict):
-        return {k: replace_placeholders(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [replace_placeholders(item) for item in obj]
-    elif isinstance(obj, str):
-        # Remplacer les placeholders
-        result = obj
-        result = result.replace('{{SERIAL_PORTS}}', serial_ports_json)
-        result = result.replace('{{MQTT_BROKER}}', mqtt_broker)
-        result = result.replace('{{MQTT_PORT}}', mqtt_port)
-        result = result.replace('{{MQTT_USER}}', mqtt_user)
-        result = result.replace('{{MQTT_PASSWORD}}', mqtt_password)
-        result = result.replace('{{POLLING_FAST}}', polling_fast)
-        result = result.replace('{{POLLING_SLOW}}', polling_slow)
-        
-        # Cas spéciaux pour les serial ports individuels
-        if serial_port_1:
-            result = result.replace('{{SERIAL_PORT_1}}', serial_port_1)
-        if serial_port_2:
-            result = result.replace('{{SERIAL_PORT_2}}', serial_port_2)
-        if serial_port_3:
-            result = result.replace('{{SERIAL_PORT_3}}', serial_port_3)
-        
-        return result
-    else:
-        return obj
+# Vérifier qu'il ne reste plus de placeholders
+if '{{' in content:
+    remaining = [line for line in content.split('\n') if '{{' in line]
+    print(f"ATTENTION: Placeholders restants trouvés:")
+    for line in remaining[:5]:  # Afficher les 5 premiers
+        print(f"  {line.strip()}")
 
-# Appliquer les remplacements
-flows_processed = replace_placeholders(flows)
+# Parser le JSON pour vérifier qu'il est valide
+try:
+    flows = json.loads(content)
+    print(f"JSON valide: {len(flows)} nodes")
+except Exception as e:
+    print(f"Erreur: JSON invalide après remplacement: {e}")
+    sys.exit(1)
 
 # Écrire le fichier
 try:
     with open('/data/nodered/flows.json', 'w') as f:
-        json.dump(flows_processed, f, indent=2)
+        json.dump(flows, f, indent=2)
     print("flows.json généré avec succès")
 except Exception as e:
     print(f"Erreur écriture flows.json: {e}")
@@ -121,17 +129,6 @@ bashio::log.info "flows.json généré avec succès"
 cp /etc/nodered/settings.js /data/nodered/settings.js
 
 bashio::log.info "Lancement de Node-RED..."
-
-# Exporter les variables pour Python
-export SERIAL_PORT_1
-export SERIAL_PORT_2
-export SERIAL_PORT_3
-export MQTT_BROKER
-export MQTT_PORT
-export MQTT_USER
-export MQTT_PASSWORD
-export POLLING_FAST
-export POLLING_SLOW
 
 # Démarrer Node-RED
 exec node-red \
