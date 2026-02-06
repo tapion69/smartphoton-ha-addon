@@ -21,14 +21,14 @@ module.exports = {
             enabled: false
         }
     },
-    adminAuth: {
-        type: "credentials",
-        users: [{
-            username: "admin",
-            password: "$2a$08$zZWtXTja0fB1pzD4sHCMyOCMYz2Z6dNbM6tl8sJogENOMcxWV9DN.",
-            permissions: "*"
-        }]
-    },
+// adminAuth: {
+//     type: "credentials",
+//     users: [{
+//         username: "admin",
+//         password: "$2a$08$zZWtXTja0fB1pzD4sHCMyOCMYz2Z6dNbM6tl8sJogENOMcxWV9DN.",
+//         permissions: "*"
+//     }]
+// },
     httpAdminRoot: '/',
     httpNodeRoot: '/api',
     ui: { path: "ui" },
