@@ -28,6 +28,9 @@ bashio::log.info "  MQTT Broker: ${MQTT_BROKER}:${MQTT_PORT}"
 bashio::log.info "  Polling rapide: ${POLLING_FAST}s"
 bashio::log.info "  Polling lent: ${POLLING_SLOW}s"
 
+# Créer le répertoire s'il n'existe pas
+mkdir -p /data/nodered
+
 # Créer le tableau des ports série pour le flows.json
 SERIAL_PORTS_JS="[\"${SERIAL_PORT_1}\""
 if [ -n "${SERIAL_PORT_2}" ]; then
@@ -50,6 +53,12 @@ sed -e "s|{{SERIAL_PORTS}}|${SERIAL_PORTS_JS}|g" \
     -e "s|{{POLLING_SLOW}}|${POLLING_SLOW}|g" \
     /etc/nodered/flows-template.json > /data/nodered/flows.json
 
+# Vérifier que le fichier a été créé
+if [ ! -f /data/nodered/flows.json ]; then
+    bashio::log.error "Échec de la génération du flows.json"
+    exit 1
+fi
+
 # Copier le settings.js
 cp /etc/nodered/settings.js /data/nodered/settings.js
 
@@ -58,5 +67,4 @@ bashio::log.info "Lancement de Node-RED..."
 # Démarrer Node-RED
 exec node-red \
     --settings /data/nodered/settings.js \
-    --userDir /data/nodered \
-    /data/nodered/flows.json
+    --userDir /data/nodered
