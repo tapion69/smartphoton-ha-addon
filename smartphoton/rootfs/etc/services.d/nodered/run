@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 # ==============================================================================
-# Start Node-RED with dynamic flows generation
+# Start Node-RED with dynamic flows generation using Python
 # ==============================================================================
 
 bashio::log.info "Démarrage de Voltronic MQTT..."
@@ -31,27 +31,83 @@ bashio::log.info "  Polling lent: ${POLLING_SLOW}s"
 # Créer le répertoire s'il n'existe pas
 mkdir -p /data/nodered
 
-# Créer le tableau des ports série pour le flows.json
-SERIAL_PORTS_JS="[\"${SERIAL_PORT_1}\""
-if [ -n "${SERIAL_PORT_2}" ]; then
-    SERIAL_PORTS_JS="${SERIAL_PORTS_JS}, \"${SERIAL_PORT_2}\""
-fi
-if [ -n "${SERIAL_PORT_3}" ]; then
-    SERIAL_PORTS_JS="${SERIAL_PORTS_JS}, \"${SERIAL_PORT_3}\""
-fi
-SERIAL_PORTS_JS="${SERIAL_PORTS_JS}]"
-
 bashio::log.info "Génération du flows.json..."
 
-# Générer le flows.json depuis le template
-sed -e "s|{{SERIAL_PORTS}}|${SERIAL_PORTS_JS}|g" \
-    -e "s|{{MQTT_BROKER}}|${MQTT_BROKER}|g" \
-    -e "s|{{MQTT_PORT}}|${MQTT_PORT}|g" \
-    -e "s|{{MQTT_USER}}|${MQTT_USER}|g" \
-    -e "s|{{MQTT_PASSWORD}}|${MQTT_PASSWORD}|g" \
-    -e "s|{{POLLING_FAST}}|${POLLING_FAST}|g" \
-    -e "s|{{POLLING_SLOW}}|${POLLING_SLOW}|g" \
-    /etc/nodered/flows-template.json > /data/nodered/flows.json
+# Utiliser Python pour générer le flows.json
+python3 << 'PYTHON_SCRIPT'
+import json
+import os
+import sys
+
+# Récupérer les variables d'environnement passées par bash
+serial_port_1 = os.environ.get('SERIAL_PORT_1', '')
+serial_port_2 = os.environ.get('SERIAL_PORT_2', '')
+serial_port_3 = os.environ.get('SERIAL_PORT_3', '')
+mqtt_broker = os.environ.get('MQTT_BROKER', 'localhost')
+mqtt_port = os.environ.get('MQTT_PORT', '1883')
+mqtt_user = os.environ.get('MQTT_USER', '')
+mqtt_password = os.environ.get('MQTT_PASSWORD', '')
+polling_fast = os.environ.get('POLLING_FAST', '5')
+polling_slow = os.environ.get('POLLING_SLOW', '300')
+
+# Lire le template
+try:
+    with open('/etc/nodered/flows-template.json', 'r') as f:
+        flows = json.load(f)
+except Exception as e:
+    print(f"Erreur lecture template: {e}")
+    sys.exit(1)
+
+# Construire le tableau des ports série
+serial_ports = [serial_port_1]
+if serial_port_2:
+    serial_ports.append(serial_port_2)
+if serial_port_3:
+    serial_ports.append(serial_port_3)
+
+serial_ports_json = json.dumps(serial_ports)
+
+# Fonction récursive pour remplacer les placeholders
+def replace_placeholders(obj):
+    if isinstance(obj, dict):
+        return {k: replace_placeholders(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [replace_placeholders(item) for item in obj]
+    elif isinstance(obj, str):
+        # Remplacer les placeholders
+        result = obj
+        result = result.replace('{{SERIAL_PORTS}}', serial_ports_json)
+        result = result.replace('{{MQTT_BROKER}}', mqtt_broker)
+        result = result.replace('{{MQTT_PORT}}', mqtt_port)
+        result = result.replace('{{MQTT_USER}}', mqtt_user)
+        result = result.replace('{{MQTT_PASSWORD}}', mqtt_password)
+        result = result.replace('{{POLLING_FAST}}', polling_fast)
+        result = result.replace('{{POLLING_SLOW}}', polling_slow)
+        
+        # Cas spéciaux pour les serial ports individuels
+        if serial_port_1:
+            result = result.replace('{{SERIAL_PORT_1}}', serial_port_1)
+        if serial_port_2:
+            result = result.replace('{{SERIAL_PORT_2}}', serial_port_2)
+        if serial_port_3:
+            result = result.replace('{{SERIAL_PORT_3}}', serial_port_3)
+        
+        return result
+    else:
+        return obj
+
+# Appliquer les remplacements
+flows_processed = replace_placeholders(flows)
+
+# Écrire le fichier
+try:
+    with open('/data/nodered/flows.json', 'w') as f:
+        json.dump(flows_processed, f, indent=2)
+    print("flows.json généré avec succès")
+except Exception as e:
+    print(f"Erreur écriture flows.json: {e}")
+    sys.exit(1)
+PYTHON_SCRIPT
 
 # Vérifier que le fichier a été créé
 if [ ! -f /data/nodered/flows.json ]; then
@@ -59,10 +115,23 @@ if [ ! -f /data/nodered/flows.json ]; then
     exit 1
 fi
 
+bashio::log.info "flows.json généré avec succès"
+
 # Copier le settings.js
 cp /etc/nodered/settings.js /data/nodered/settings.js
 
 bashio::log.info "Lancement de Node-RED..."
+
+# Exporter les variables pour Python
+export SERIAL_PORT_1
+export SERIAL_PORT_2
+export SERIAL_PORT_3
+export MQTT_BROKER
+export MQTT_PORT
+export MQTT_USER
+export MQTT_PASSWORD
+export POLLING_FAST
+export POLLING_SLOW
 
 # Démarrer Node-RED
 exec node-red \
