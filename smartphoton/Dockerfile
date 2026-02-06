@@ -20,8 +20,8 @@ RUN mkdir -p /data/nodered
 # Installer Node-RED globalement
 RUN npm install -g --unsafe-perm node-red@3.1.0
 
-# Installer node-red-node-serialport globalement
-RUN npm install -g --unsafe-perm node-red-node-serialport@1.0.6
+# Installer node-red-node-serialport (dernière version)
+RUN npm install -g --unsafe-perm node-red-node-serialport
 
 # Copier les fichiers
 COPY rootfs /
