@@ -1,136 +1,69 @@
 #!/usr/bin/with-contenv bashio
 # ==============================================================================
-# Start Node-RED with dynamic flows generation using Python
+# Start Node-RED with dynamic flows generation
 # ==============================================================================
 
 bashio::log.info "Démarrage de Voltronic MQTT..."
 
-# Lire les options de configuration
+# Lire les options
 SERIAL_PORT_1=$(bashio::config 'serial_port_1')
 SERIAL_PORT_2=$(bashio::config 'serial_port_2')
 SERIAL_PORT_3=$(bashio::config 'serial_port_3')
 MQTT_BROKER=$(bashio::config 'mqtt_broker')
 MQTT_PORT=$(bashio::config 'mqtt_port')
-MQTT_USER=$(bashio::config 'mqtt_user')
-MQTT_PASSWORD=$(bashio::config 'mqtt_password')
 POLLING_FAST=$(bashio::config 'polling_fast')
 POLLING_SLOW=$(bashio::config 'polling_slow')
 
 bashio::log.info "Configuration:"
 bashio::log.info "  Serial Port 1: ${SERIAL_PORT_1}"
-if [ -n "${SERIAL_PORT_2}" ]; then
-    bashio::log.info "  Serial Port 2: ${SERIAL_PORT_2}"
-fi
-if [ -n "${SERIAL_PORT_3}" ]; then
-    bashio::log.info "  Serial Port 3: ${SERIAL_PORT_3}"
-fi
+[ -n "${SERIAL_PORT_2}" ] && bashio::log.info "  Serial Port 2: ${SERIAL_PORT_2}"
+[ -n "${SERIAL_PORT_3}" ] && bashio::log.info "  Serial Port 3: ${SERIAL_PORT_3}"
 bashio::log.info "  MQTT Broker: ${MQTT_BROKER}:${MQTT_PORT}"
-bashio::log.info "  Polling rapide: ${POLLING_FAST}s"
-bashio::log.info "  Polling lent: ${POLLING_SLOW}s"
 
-# Créer le répertoire s'il n'existe pas
 mkdir -p /data/nodered
 
 bashio::log.info "Génération du flows.json..."
 
-# Exporter les variables pour Python
-export SERIAL_PORT_1
-export SERIAL_PORT_2
-export SERIAL_PORT_3
-export MQTT_BROKER
-export MQTT_PORT
-export MQTT_USER
-export MQTT_PASSWORD
-export POLLING_FAST
-export POLLING_SLOW
+# Créer le JSON des ports série
+SERIAL_PORTS_JSON="[\"${SERIAL_PORT_1}\""
+[ -n "${SERIAL_PORT_2}" ] && SERIAL_PORTS_JSON="${SERIAL_PORTS_JSON},\"${SERIAL_PORT_2}\""
+[ -n "${SERIAL_PORT_3}" ] && SERIAL_PORTS_JSON="${SERIAL_PORTS_JSON},\"${SERIAL_PORT_3}\""
+SERIAL_PORTS_JSON="${SERIAL_PORTS_JSON}]"
 
-# Utiliser Python pour générer le flows.json
-python3 << 'PYTHON_SCRIPT'
-import json
-import os
-import sys
+# Remplacer UNIQUEMENT dans les nodes de config (pas dans le code JavaScript)
+jq --arg sp1 "${SERIAL_PORT_1}" \
+   --arg sp2 "${SERIAL_PORT_2:-/dev/ttyUSB1}" \
+   --arg sp3 "${SERIAL_PORT_3:-/dev/ttyUSB2}" \
+   --arg broker "${MQTT_BROKER}" \
+   --arg port "${MQTT_PORT}" \
+   --arg fast "${POLLING_FAST}" \
+   --arg slow "${POLLING_SLOW}" \
+   --argjson ports "${SERIAL_PORTS_JSON}" \
+   '
+   # Remplacer dans les serial-port nodes
+   map(if .type == "serial-port" then
+     if .id == "serial_port_1" then .serialport = $sp1
+     elif .id == "serial_port_2" then .serialport = $sp2
+     elif .id == "serial_port_3" then .serialport = $sp3
+     else . end
+   # Remplacer dans mqtt-broker nodes
+   elif .type == "mqtt-broker" then
+     .broker = $broker | .port = $port
+   # Remplacer dans inject nodes (polling)
+   elif .type == "inject" and (.name | contains("temps réel")) then
+     .repeat = $fast
+   elif .type == "inject" and (.name | contains("config")) then
+     .repeat = $slow
+   else . end)
+   ' /etc/nodered/flows-template.json > /data/nodered/flows.json
 
-# Récupérer les variables d'environnement
-serial_port_1 = os.environ.get('SERIAL_PORT_1', '/dev/ttyUSB0')
-serial_port_2 = os.environ.get('SERIAL_PORT_2', '')
-serial_port_3 = os.environ.get('SERIAL_PORT_3', '')
-mqtt_broker = os.environ.get('MQTT_BROKER', 'localhost')
-mqtt_port = os.environ.get('MQTT_PORT', '1883')
-mqtt_user = os.environ.get('MQTT_USER', '')
-mqtt_password = os.environ.get('MQTT_PASSWORD', '')
-polling_fast = os.environ.get('POLLING_FAST', '5')
-polling_slow = os.environ.get('POLLING_SLOW', '300')
-
-print(f"Python: Serial Port 1 = {serial_port_1}")
-print(f"Python: MQTT Broker = {mqtt_broker}:{mqtt_port}")
-
-# Lire le template
-try:
-    with open('/etc/nodered/flows-template.json', 'r') as f:
-        content = f.read()
-except Exception as e:
-    print(f"Erreur lecture template: {e}")
-    sys.exit(1)
-
-# Construire le tableau des ports série
-serial_ports = [serial_port_1]
-if serial_port_2:
-    serial_ports.append(serial_port_2)
-if serial_port_3:
-    serial_ports.append(serial_port_3)
-
-# Remplacer TOUS les placeholders dans le texte brut
-# (plus fiable que de parser le JSON)
-content = content.replace('{{SERIAL_PORTS}}', json.dumps(serial_ports))
-content = content.replace('{{SERIAL_PORT_1}}', serial_port_1)
-content = content.replace('{{SERIAL_PORT_2}}', serial_port_2 if serial_port_2 else '/dev/ttyUSB1')
-content = content.replace('{{SERIAL_PORT_3}}', serial_port_3 if serial_port_3 else '/dev/ttyUSB2')
-content = content.replace('{{MQTT_BROKER}}', mqtt_broker)
-content = content.replace('{{MQTT_PORT}}', mqtt_port)
-content = content.replace('{{MQTT_USER}}', mqtt_user)
-content = content.replace('{{MQTT_PASSWORD}}', mqtt_password)
-content = content.replace('{{POLLING_FAST}}', polling_fast)
-content = content.replace('{{POLLING_SLOW}}', polling_slow)
-
-# Vérifier qu'il ne reste plus de placeholders
-if '{{' in content:
-    remaining = [line for line in content.split('\n') if '{{' in line]
-    print(f"ATTENTION: Placeholders restants trouvés:")
-    for line in remaining[:5]:  # Afficher les 5 premiers
-        print(f"  {line.strip()}")
-
-# Parser le JSON pour vérifier qu'il est valide
-try:
-    flows = json.loads(content)
-    print(f"JSON valide: {len(flows)} nodes")
-except Exception as e:
-    print(f"Erreur: JSON invalide après remplacement: {e}")
-    sys.exit(1)
-
-# Écrire le fichier
-try:
-    with open('/data/nodered/flows.json', 'w') as f:
-        json.dump(flows, f, indent=2)
-    print("flows.json généré avec succès")
-except Exception as e:
-    print(f"Erreur écriture flows.json: {e}")
-    sys.exit(1)
-PYTHON_SCRIPT
-
-# Vérifier que le fichier a été créé
 if [ ! -f /data/nodered/flows.json ]; then
-    bashio::log.error "Échec de la génération du flows.json"
+    bashio::log.error "Échec génération flows.json"
     exit 1
 fi
 
-bashio::log.info "flows.json généré avec succès"
-
-# Copier le settings.js
 cp /etc/nodered/settings.js /data/nodered/settings.js
 
 bashio::log.info "Lancement de Node-RED..."
 
-# Démarrer Node-RED
-exec node-red \
-    --settings /data/nodered/settings.js \
-    --userDir /data/nodered
+exec node-red --settings /data/nodered/settings.js --userDir /data/nodered
