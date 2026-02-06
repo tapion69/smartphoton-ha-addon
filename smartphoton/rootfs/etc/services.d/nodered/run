@@ -21,6 +21,7 @@ bashio::log.info "  Serial Port 1: ${SERIAL_PORT_1}"
 [ -n "${SERIAL_PORT_2}" ] && bashio::log.info "  Serial Port 2: ${SERIAL_PORT_2}"
 [ -n "${SERIAL_PORT_3}" ] && bashio::log.info "  Serial Port 3: ${SERIAL_PORT_3}"
 bashio::log.info "  MQTT Broker: ${MQTT_BROKER}:${MQTT_PORT}"
+bashio::log.info "  MQTT User: ${MQTT_USER}"
 
 mkdir -p /data/nodered
 
@@ -57,6 +58,8 @@ jq --arg sp1 "${SERIAL_PORT_1}" \
    --arg sp3 "${SERIAL_PORT_3:-/dev/ttyUSB2}" \
    --arg broker "${MQTT_BROKER}" \
    --arg port "${MQTT_PORT}" \
+   --arg user "${MQTT_USER}" \
+   --arg pass "${MQTT_PASSWORD}" \
    '
    map(
      if .type == "serial-port" then
@@ -65,7 +68,10 @@ jq --arg sp1 "${SERIAL_PORT_1}" \
        elif .id == "serial_port_3" then .serialport = $sp3
        else . end
      elif .type == "mqtt-broker" then
-       .broker = $broker | .port = $port
+       .broker = $broker | 
+       .port = $port | 
+       .username = $user | 
+       .password = $pass
      else . end
    )
    ' /data/nodered/flows.json > /data/nodered/flows-temp.json && \
