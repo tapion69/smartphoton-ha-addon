@@ -1,0 +1,696 @@
+[
+    {
+        "id": "1a931256a8359043",
+        "type": "tab",
+        "label": "⚙️ Config",
+        "disabled": false,
+        "info": "Configuration centralisée de l'add-on"
+    },
+    {
+        "id": "2e93aaba45f794b7",
+        "type": "tab",
+        "label": "🔌 Voltronic",
+        "disabled": false,
+        "info": "Communication avec les onduleurs"
+    },
+    {
+        "id": "9718612b97578ccc",
+        "type": "tab",
+        "label": "📡 MQTT Home Assistant",
+        "disabled": false,
+        "info": "Auto-découverte et publication MQTT"
+    },
+    {
+        "id": "mqtt_broker",
+        "type": "mqtt-broker",
+        "name": "HA MQTT Broker",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "serial_port_1",
+        "type": "serial-port",
+        "name": "",
+        "serialport": "/dev/ttyUSB0",
+        "serialbaud": "2400",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "",
+        "newline": "\\r",
+        "bin": "false",
+        "out": "char",
+        "addchar": "",
+        "responsetimeout": "1000"
+    },
+    {
+        "id": "serial_port_2",
+        "type": "serial-port",
+        "name": "",
+        "serialport": "/dev/ttyUSB1",
+        "serialbaud": "2400",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "",
+        "newline": "\\r",
+        "bin": "false",
+        "out": "char",
+        "addchar": "",
+        "responsetimeout": "1000"
+    },
+    {
+        "id": "serial_port_3",
+        "type": "serial-port",
+        "name": "",
+        "serialport": "/dev/ttyUSB2",
+        "serialbaud": "2400",
+        "databits": "8",
+        "parity": "none",
+        "stopbits": "1",
+        "waitfor": "",
+        "newline": "\\r",
+        "bin": "false",
+        "out": "char",
+        "addchar": "",
+        "responsetimeout": "1000"
+    },
+    {
+        "id": "7d92c281133819cd",
+        "type": "inject",
+        "z": "1a931256a8359043",
+        "name": "🚀 Init au démarrage",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "2",
+        "topic": "",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "9ce6e40823ea6c13",
+                "7a644697345437c7"
+            ]
+        ]
+    },
+    {
+        "id": "9ce6e40823ea6c13",
+        "type": "function",
+        "z": "1a931256a8359043",
+        "name": "📋 Configuration globale",
+        "func": "// ============================================\n// CONFIGURATION CENTRALISÉE\n// Version simplifiée sans require\n// ============================================\n\n// Config par défaut (les vraies valeurs sont dans les nodes serial/mqtt configurés par jq)\nconst addonConfig = {\n    serialPorts: [\"/dev/ttyUSB0\", \"/dev/ttyUSB1\"],\n    mqtt: { broker: \"core-mosquitto\", port: 1883, user: \"\", password: \"\" },\n    polling: { fast: 5, slow: 300 }\n};\n\n// Liste des ports série\nconst serialPorts = addonConfig.serialPorts.filter(p => p && p.length > 0);\n\n// Configuration MQTT\nconst mqttConfig = {\n    baseTopic: \"voltronic\",\n    discoveryPrefix: \"homeassistant\",\n    deviceName: \"Onduleur Voltronic\",\n    broker: addonConfig.mqtt.broker,\n    port: addonConfig.mqtt.port,\n    user: addonConfig.mqtt.user,\n    password: addonConfig.mqtt.password\n};\n\n// Intervalles de polling (ms)\nconst pollingFastMs = (addonConfig.polling.fast || 5) * 1000;\nconst pollingSlowMs = (addonConfig.polling.slow || 300) * 1000;\n\nconst voltronicCommands = {\n    // Temps réel (5s)\n    QPIGS: { interval: pollingFastMs, description: \"General Status\" },\n    QPIGS2: { interval: pollingFastMs, description: \"General Status MAXII (PV2)\" },\n    QMOD: { interval: pollingFastMs, description: \"Mode\" },\n    QPIWS: { interval: pollingFastMs, description: \"Warning Status\" },\n\n    // Config (5min)\n    QPIRI: { interval: pollingSlowMs, description: \"Rated Information\" },\n    QPI: { interval: 0, description: \"Protocol ID\" },\n    QID: { interval: 0, description: \"Serial Number\" },\n    QVFW: { interval: pollingSlowMs, description: \"Main CPU Firmware\" },\n    QFLAG: { interval: pollingSlowMs, description: \"Device Flags\" },\n    QMN: { interval: 0, description: \"Model Name\" },\n    QT: { interval: pollingSlowMs, description: \"Time\" },\n\n    // Energie (5min)\n    QET: { interval: pollingSlowMs, description: \"Total PV Energy\" },\n    QEY: { interval: pollingSlowMs, description: \"PV Energy Year\", dynamic: true },\n    QEM: { interval: pollingSlowMs, description: \"PV Energy Month\", dynamic: true },\n    QED: { interval: pollingSlowMs, description: \"PV Energy Day\", dynamic: true },\n    QLT: { interval: pollingSlowMs, description: \"Total Load Energy\" },\n    QLY: { interval: pollingSlowMs, description: \"Load Energy Year\", dynamic: true },\n    QLM: { interval: pollingSlowMs, description: \"Load Energy Month\", dynamic: true },\n    QLD: { interval: pollingSlowMs, description: \"Load Energy Day\", dynamic: true },\n\n    // BMS\n    QDOP: { interval: pollingSlowMs, description: \"2nd Output Relay Info\" },\n    QBEQI: { interval: pollingSlowMs, description: \"Battery Equalization Status\" }\n};\n\nconst editableParams = {\n    \"POP\": { name: \"Priorité source sortie\", values: { \"UTI\": \"00\", \"SOL\": \"01\", \"SBU\": \"02\" }, entityType: \"select\", category: \"config\" },\n    \"PCP\": { name: \"Priorité charge batterie\", values: { \"Solar First\": \"01\", \"Solar+Utility\": \"02\", \"Solar Only\": \"03\" }, entityType: \"select\", category: \"config\" },\n    \"PBT\": { name: \"Type batterie\", values: { \"AGM\": \"00\", \"Flooded\": \"01\", \"User\": \"02\", \"Pylon\": \"03\" }, entityType: \"select\", category: \"config\" },\n    \"PBCV\": { name: \"Tension bulk\", min: 48.0, max: 58.4, step: 0.1, unit: \"V\", entityType: \"number\", category: \"config\" },\n    \"PBFT\": { name: \"Tension float\", min: 48.0, max: 58.4, step: 0.1, unit: \"V\", entityType: \"number\", category: \"config\" },\n    \"MNCHGC\": { name: \"Courant charge max\", min: 10, max: 120, unit: \"A\", entityType: \"number\", category: \"config\" },\n    \"MUCHGC\": { name: \"Courant charge utility max\", min: 2, max: 100, unit: \"A\", entityType: \"number\", category: \"config\" }\n};\n\n// Stockage en global\nglobal.set(\"config.serialPorts\", serialPorts);\nglobal.set(\"config.mqtt\", mqttConfig);\nglobal.set(\"config.commands\", voltronicCommands);\nglobal.set(\"config.editableParams\", editableParams);\n\n// Initialiser 2 onduleurs\nfor (let i = 0; i < 2; i++) {\n    const inverterNum = i + 1;\n    global.set(`inverter_${inverterNum}.port`, serialPorts[i]);\n    global.set(`inverter_${inverterNum}.data`, {});\n    global.set(`inverter_${inverterNum}.lastUpdate`, null);\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"2 onduleurs\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 100,
+        "wires": [
+            [
+                "340719cabab40c10",
+                "11848d8743ab51f6"
+            ]
+        ]
+    },
+    {
+        "id": "7a644697345437c7",
+        "type": "function",
+        "z": "1a931256a8359043",
+        "name": "📚 Helpers Library",
+        "func": "// ============================================\n// BIBLIOTHÈQUE DE FONCTIONS UTILITAIRES\n// ============================================\n\n// Calcul CRC16 XModem\nfunction crc16(str) {\n    let crc = 0;\n    for (let i = 0; i < str.length; i++) {\n        let t = (crc >> 8) ^ str.charCodeAt(i);\n        t ^= t >> 4;\n        crc = ((crc << 8) ^ (t << 12) ^ (t << 5) ^ t) & 0xFFFF;\n    }\n    return crc;\n}\n\n// Construire une commande Voltronic complète\nfunction buildVoltronicCommand(command, option = \"\") {\n    const fullCommand = command + option;\n    const commandHex = Buffer.from(fullCommand).toString('hex');\n    const crcHex = crc16(fullCommand).toString(16).padStart(4, '0');\n    const finalHex = commandHex + crcHex + \"0d\";\n    return Buffer.from(finalHex, \"hex\");\n}\n\n// Parser une réponse Voltronic\nfunction parseVoltronicResponse(buffer) {\n    if (!buffer || buffer.length < 3) return null;\n\n    let response = buffer.toString('ascii').trim();\n\n    // Nettoyer les caractères invalides\n    response = response.replace(/[^\\x20-\\x7E]/g, '');\n\n    // Retirer les parenthèses si présentes\n    if (response[0] === '(') {\n        response = response.substring(1);\n    }\n    if (response[response.length - 1] === ')') {\n        response = response.substring(0, response.length - 1);\n    }\n\n    // Retirer le CRC (2 derniers caractères avant le \\r)\n    if (response.length > 2) {\n        // Le CRC est en hexa sur 2 bytes, donc on retire les 2 derniers chars\n        response = response.substring(0, response.length - 2);\n    }\n\n    return response.trim();\n}\n\n// Formater un nombre avec padding\nfunction padNumber(num, length, char = '0') {\n    return String(num).padStart(length, char);\n}\n\n// Formater une tension (ajouter .0 si nécessaire)\nfunction formatVoltage(value) {\n    const str = String(value);\n    return str.includes('.') ? str : str + '.0';\n}\n\n// Formater un courant pour MUCHGC (format: 0nnn)\nfunction formatMUCHGC(value) {\n    const cleaned = String(value).replace(/[^0-9]/g, '');\n    const num = parseInt(cleaned) || 0;\n    return '0' + padNumber(num, 3);\n}\n\n// Formater un courant pour MNCHGC (format: nnn)\nfunction formatMNCHGC(value) {\n    const cleaned = String(value).replace(/[^0-9]/g, '');\n    const num = parseInt(cleaned) || 0;\n    return padNumber(num, 3);\n}\n\n// Générer la date actuelle pour commandes QEY, QEM, QED, etc.\nfunction getCurrentDate() {\n    const now = new Date();\n    return {\n        year: now.getFullYear().toString(),\n        month: padNumber(now.getMonth() + 1, 2),\n        day: padNumber(now.getDate(), 2)\n    };\n}\n\n// Formater date/heure pour commande DAT\nfunction formatDateTime() {\n    const now = new Date();\n    const year = String(now.getFullYear()).slice(-2);\n    const month = padNumber(now.getMonth() + 1, 2);\n    const day = padNumber(now.getDate(), 2);\n    const hours = padNumber(now.getHours(), 2);\n    const minutes = padNumber(now.getMinutes(), 2);\n    const seconds = padNumber(now.getSeconds(), 2);\n    return year + month + day + hours + minutes + seconds;\n}\n\n// Stocker les helpers en global\nglobal.set(\"helpers\", {\n    crc16,\n    buildVoltronicCommand,\n    parseVoltronicResponse,\n    padNumber,\n    formatVoltage,\n    formatMUCHGC,\n    formatMNCHGC,\n    getCurrentDate,\n    formatDateTime\n});\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"Helpers chargés\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "340719cabab40c10",
+        "type": "debug",
+        "z": "1a931256a8359043",
+        "name": "Debug Config",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 680,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "11848d8743ab51f6",
+        "type": "link out",
+        "z": "1a931256a8359043",
+        "name": "→ MQTT Discovery",
+        "mode": "link",
+        "links": [
+            "f8c67a719ddd5879"
+        ],
+        "x": 675,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "63f22070d7742dc6",
+        "type": "inject",
+        "z": "2e93aaba45f794b7",
+        "name": "⚡ Poll temps réel (5s)",
+        "props": [],
+        "repeat": "5",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "x": 160,
+        "y": 100,
+        "wires": [
+            [
+                "599b274f9edd822c"
+            ]
+        ]
+    },
+    {
+        "id": "262dc9096abcaa5e",
+        "type": "inject",
+        "z": "2e93aaba45f794b7",
+        "name": "⏱️ Poll config (5min)",
+        "props": [],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "10",
+        "topic": "",
+        "x": 160,
+        "y": 160,
+        "wires": [
+            [
+                "190a18406c8b93cd"
+            ]
+        ]
+    },
+    {
+        "id": "599b274f9edd822c",
+        "type": "function",
+        "z": "2e93aaba45f794b7",
+        "name": "📋 Commandes temps réel",
+        "func": "const commands = global.get(\"config.commands\") || {};\nconst serialPorts = global.get(\"config.serialPorts\") || [];\nconst helpers = global.get(\"helpers\");\n\nconst fastCommands = ['QPIGS', 'QPIGS2', 'QMOD', 'QPIWS'];\nconst messages = [];\n\nfor (let i = 0; i < serialPorts.length; i++) {\n    const inverterNum = i + 1;\n    \n    for (const cmd of fastCommands) {\n        if (!commands[cmd]) continue;\n        \n        messages.push({\n            payload: cmd,\n            inverterNum: inverterNum,\n            port: serialPorts[i],\n            command: cmd\n        });\n    }\n}\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 100,
+        "wires": [
+            [
+                "90b7058b74c44747"
+            ]
+        ]
+    },
+    {
+        "id": "190a18406c8b93cd",
+        "type": "function",
+        "z": "2e93aaba45f794b7",
+        "name": "📋 Commandes config/énergie",
+        "func": "const commands = global.get(\"config.commands\") || {};\nconst serialPorts = global.get(\"config.serialPorts\") || [];\nconst helpers = global.get(\"helpers\");\nconst date = helpers.getCurrentDate();\n\nconst slowCommands = [\n    'QPIRI', 'QPI', 'QID', 'QSID', 'QVFW', 'QVFW3', 'QFLAG',\n    'QMN', 'QGMN', 'QT', 'QET', 'QLT', 'QDOP', 'QBEQI'\n];\n\n// Commandes dynamiques avec date\nconst dateCommands = [\n    { cmd: 'QEY', suffix: date.year },\n    { cmd: 'QEM', suffix: date.year + date.month },\n    { cmd: 'QED', suffix: date.year + date.month + date.day },\n    { cmd: 'QLY', suffix: date.year },\n    { cmd: 'QLM', suffix: date.year + date.month },\n    { cmd: 'QLD', suffix: date.year + date.month + date.day }\n];\n\nconst messages = [];\n\nfor (let i = 0; i < serialPorts.length; i++) {\n    const inverterNum = i + 1;\n    \n    // Commandes simples\n    for (const cmd of slowCommands) {\n        messages.push({\n            payload: cmd,\n            inverterNum: inverterNum,\n            port: serialPorts[i],\n            command: cmd\n        });\n    }\n    \n    // Commandes avec date\n    for (const dc of dateCommands) {\n        messages.push({\n            payload: dc.cmd + dc.suffix,\n            inverterNum: inverterNum,\n            port: serialPorts[i],\n            command: dc.cmd,\n            commandSuffix: dc.suffix\n        });\n    }\n}\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 160,
+        "wires": [
+            [
+                "90b7058b74c44747"
+            ]
+        ]
+    },
+    {
+        "id": "90b7058b74c44747",
+        "type": "function",
+        "z": "2e93aaba45f794b7",
+        "name": "🔧 Construire commande",
+        "func": "const helpers = global.get(\"helpers\");\n\nif (!msg.command) {\n    node.error(\"Pas de commande spécifiée\");\n    return null;\n}\n\n// Construire la commande avec CRC\nconst commandString = msg.commandSuffix ? msg.command + msg.commandSuffix : msg.command;\nconst commandBuffer = helpers.buildVoltronicCommand(commandString);\n\nmsg.payload = commandBuffer;\nmsg.topic = msg.command;  // ← CETTE LIGNE EST IMPORTANTE !\n\nnode.status({\n    fill: \"blue\",\n    shape: \"dot\",\n    text: `${commandString} → Onduleur ${msg.inverterNum}`\n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 130,
+        "wires": [
+            [
+                "a06eaeb6da68caf0"
+            ]
+        ]
+    },
+    {
+        "id": "a06eaeb6da68caf0",
+        "type": "switch",
+        "z": "2e93aaba45f794b7",
+        "name": "🔀 Router vers port série",
+        "property": "inverterNum",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "1",
+                "vt": "num"
+            },
+            {
+                "t": "eq",
+                "v": "2",
+                "vt": "num"
+            },
+            {
+                "t": "eq",
+                "v": "3",
+                "vt": "num"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 3,
+        "x": 960,
+        "y": 130,
+        "wires": [
+            [
+                "a58e34c0b2d30580"
+            ],
+            [
+                "feb2ea7326c1242d"
+            ],
+            [
+                "3c051c60a7e76644"
+            ]
+        ]
+    },
+    {
+        "id": "a58e34c0b2d30580",
+        "type": "serial out",
+        "z": "2e93aaba45f794b7",
+        "name": "📤 Serial Out 1",
+        "serial": "serial_port_1",
+        "x": 1220,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "feb2ea7326c1242d",
+        "type": "serial out",
+        "z": "2e93aaba45f794b7",
+        "name": "📤 Serial Out 2",
+        "serial": "serial_port_2",
+        "x": 1220,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "3c051c60a7e76644",
+        "type": "serial out",
+        "z": "2e93aaba45f794b7",
+        "name": "📤 Serial Out 3",
+        "serial": "serial_port_3",
+        "x": 1220,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "fa72c1700d60696a",
+        "type": "serial in",
+        "z": "2e93aaba45f794b7",
+        "name": "📥 Serial In 1",
+        "serial": "serial_port_1",
+        "x": 140,
+        "y": 360,
+        "wires": [
+            [
+                "8b05d7123f3de8c0"
+            ]
+        ]
+    },
+    {
+        "id": "ded7dde3723d9e2c",
+        "type": "serial in",
+        "z": "2e93aaba45f794b7",
+        "name": "📥 Serial In 2",
+        "serial": "serial_port_2",
+        "x": 140,
+        "y": 420,
+        "wires": [
+            [
+                "a0bb6c7836f0f4b6"
+            ]
+        ]
+    },
+    {
+        "id": "9d697854c89339cb",
+        "type": "serial in",
+        "z": "2e93aaba45f794b7",
+        "name": "📥 Serial In 3",
+        "serial": "serial_port_3",
+        "x": 140,
+        "y": 480,
+        "wires": [
+            [
+                "668f916e71d3cffc"
+            ]
+        ]
+    },
+    {
+        "id": "8b05d7123f3de8c0",
+        "type": "function",
+        "z": "2e93aaba45f794b7",
+        "name": "🔖 Tag onduleur 1",
+        "func": "msg.inverterNum = 1;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 360,
+        "wires": [
+            [
+                "351edf619e66faa2"
+            ]
+        ]
+    },
+    {
+        "id": "a0bb6c7836f0f4b6",
+        "type": "function",
+        "z": "2e93aaba45f794b7",
+        "name": "🔖 Tag onduleur 2",
+        "func": "msg.inverterNum = 2;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 420,
+        "wires": [
+            [
+                "351edf619e66faa2"
+            ]
+        ]
+    },
+    {
+        "id": "668f916e71d3cffc",
+        "type": "function",
+        "z": "2e93aaba45f794b7",
+        "name": "🔖 Tag onduleur 3",
+        "func": "msg.inverterNum = 3;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 480,
+        "wires": [
+            [
+                "351edf619e66faa2"
+            ]
+        ]
+    },
+    {
+        "id": "351edf619e66faa2",
+        "type": "function",
+        "z": "2e93aaba45f794b7",
+        "name": "🔍 Parser données Voltronic",
+        "func": "const helpers = global.get(\"helpers\");\nconst inverterNum = msg.inverterNum;\n\n// Parser la réponse brute\nconst data = helpers.parseVoltronicResponse(msg.payload);\n\nif (!data) {\n    node.warn(\"Réponse invalide de l'onduleur \" + inverterNum);\n    return null;\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `Onduleur ${inverterNum}: ${data}` });\n\n// Déterminer le type de réponse\nconst command = msg.topic || \"UNKNOWN\";\nlet parsed = {};\n\n// Parser selon le type de commande\nswitch(command) {\n    case \"QPIGS\": {\n        const parts = data.split(' ');\n        parsed = {\n            grid_voltage: parseFloat(parts[0]),\n            grid_frequency: parseFloat(parts[1]),\n            ac_output_voltage: parseFloat(parts[2]),\n            ac_output_frequency: parseFloat(parts[3]),\n            ac_output_apparent_power: parseInt(parts[4]),\n            ac_output_active_power: parseInt(parts[5]),\n            output_load_percent: parseInt(parts[6]),\n            bus_voltage: parseInt(parts[7]),\n            battery_voltage: parseFloat(parts[8]),\n            battery_charging_current: parseInt(parts[9]),\n            battery_capacity: parseInt(parts[10]),\n            inverter_heat_sink_temp: parseInt(parts[11]),\n            pv1_input_current: parseFloat(parts[12]),\n            pv1_input_voltage: parseFloat(parts[13]),\n            battery_voltage_scc: parseFloat(parts[14]),\n            battery_discharge_current: parseInt(parts[15]),\n            device_status: parts[16],\n            battery_voltage_offset_fans: parts[17] ? parseInt(parts[17]) : 0,\n            eeprom_version: parts[18] ? parseInt(parts[18]) : 0,\n            pv1_charging_power: parts[19] ? parseInt(parts[19]) : 0,\n            device_status2: parts[20] || '000'\n        };\n        \n        // Calculer puissance PV1\n        parsed.pv1_power = Math.round(parsed.pv1_input_voltage * parsed.pv1_input_current);\n        \n        // Calculer puissance batterie\n        parsed.battery_power = Math.round(\n            parsed.battery_voltage * \n            (parsed.battery_charging_current - parsed.battery_discharge_current)\n        );\n        break;\n    }\n        \n    case \"QPIGS2\": {\n        const parts = data.split(' ');\n        parsed = {\n            pv2_input_current: parseFloat(parts[0]),\n            pv2_input_voltage: parseFloat(parts[1]),\n            pv2_charging_power: parseInt(parts[2])\n        };\n        \n        // Calculer puissance PV2\n        parsed.pv2_power = Math.round(parsed.pv2_input_voltage * parsed.pv2_input_current);\n        break;\n    }\n        \n    case \"QPIRI\": {\n        const parts = data.split(' ');\n        parsed = {\n            grid_rating_voltage: parseFloat(parts[0]),\n            grid_rating_current: parseFloat(parts[1]),\n            ac_output_rating_voltage: parseFloat(parts[2]),\n            ac_output_rating_frequency: parseFloat(parts[3]),\n            ac_output_rating_current: parseFloat(parts[4]),\n            ac_output_rating_apparent_power: parseInt(parts[5]),\n            ac_output_rating_active_power: parseInt(parts[6]),\n            battery_rating_voltage: parseFloat(parts[7]),\n            battery_recharge_voltage: parseFloat(parts[8]),\n            battery_under_voltage: parseFloat(parts[9]),\n            battery_bulk_voltage: parseFloat(parts[10]),\n            battery_float_voltage: parseFloat(parts[11]),\n            battery_type: parseInt(parts[12]),\n            max_ac_charging_current: parseInt(parts[13]),\n            max_charging_current: parseInt(parts[14]),\n            input_voltage_range: parseInt(parts[15]),\n            output_source_priority: parseInt(parts[16]),\n            charger_source_priority: parseInt(parts[17]),\n            max_parallel_units: parseInt(parts[18]),\n            machine_type: parts[19],\n            topology: parseInt(parts[20]),\n            output_mode: parts[21],\n            battery_redischarge_voltage: parseFloat(parts[22]),\n            pv_ok_condition: parseInt(parts[23]),\n            pv_power_balance: parseInt(parts[24]),\n            max_charging_time_cv: parts[25] ? parseInt(parts[25]) : 0,\n            operation_logic: parts[26] ? parseInt(parts[26]) : 0,\n            max_discharging_current: parts[27] ? parseInt(parts[27]) : 0\n        };\n        break;\n    }\n        \n    case \"QMOD\": {\n        const modeMap = {\n            'P': 'Power On',\n            'S': 'Standby',\n            'L': 'Line',\n            'B': 'Battery',\n            'F': 'Fault',\n            'D': 'Shutdown',\n            'C': 'Charge',\n            'Y': 'Bypass',\n            'E': 'ECO'\n        };\n        parsed = { \n            mode: modeMap[data] || data,\n            mode_code: data\n        };\n        break;\n    }\n        \n    case \"QPIWS\": {\n        parsed = { \n            warning_status: data,\n            warnings: []\n        };\n        \n        // Parser les bits de warning\n        const warningMap = [\n            'PV Loss', 'Inverter Fault', 'Bus Over', 'Bus Under', 'Bus Soft Fail',\n            'Line Fail', 'OPV Short', 'Inverter Voltage Low', 'Inverter Voltage High',\n            'Over Temperature', 'Fan Locked', 'Battery Voltage High', 'Battery Low Alarm',\n            'Reserved', 'Battery Under Shutdown', 'Battery Derating', 'Over Load',\n            'EEPROM Fault', 'Inverter Over Current', 'Inverter Soft Fail', 'Self Test Fail',\n            'OP DC Voltage Over', 'Battery Open', 'Current Sensor Fail', 'Battery Short',\n            'Power Limit', 'PV Voltage High', 'MPPT Overload Fault', 'MPPT Overload Warning',\n            'Battery Too Low to Charge', 'Reserved', 'Battery Weak'\n        ];\n        \n        for (let i = 0; i < data.length && i < warningMap.length; i++) {\n            if (data[i] === '1') {\n                parsed.warnings.push(warningMap[i]);\n            }\n        }\n        break;\n    }\n        \n    case \"QPI\": {\n        parsed = { protocol_id: data };\n        break;\n    }\n        \n    case \"QID\": {\n        parsed = { serial_number: data };\n        break;\n    }\n        \n    case \"QSID\": {\n        const len = parseInt(data.substring(0, 2));\n        const serial = data.substring(2, 2 + len);\n        parsed = { \n            serial_number_length: len,\n            serial_number: serial\n        };\n        break;\n    }\n        \n    case \"QVFW\": {\n        // Format: VERFW:NNNNN.NN\n        const version = data.replace('VERFW:', '');\n        parsed = { firmware_version: version };\n        break;\n    }\n        \n    case \"QVFW3\": {\n        const version = data.replace('VERFW:', '');\n        parsed = { firmware_version_panel: version };\n        break;\n    }\n        \n    case \"QFLAG\": {\n        parsed = { \n            flags: data,\n            flag_details: {\n                buzzer: data[0] === 'E',\n                overload_bypass: data[1] === 'E',\n                lcd_escape: data[6] === 'E',\n                overload_restart: data[11] === 'E',\n                over_temp_restart: data[12] === 'E',\n                backlight: data[13] === 'E',\n                alarm_primary_interrupt: data[14] === 'E',\n                fault_code_record: data[15] === 'E'\n            }\n        };\n        break;\n    }\n        \n    case \"QMN\": {\n        parsed = { model_name: data };\n        break;\n    }\n        \n    case \"QGMN\": {\n        parsed = { general_model_name: data };\n        break;\n    }\n        \n    case \"QT\": {\n        // Format: YYYYMMDDHHMMSS\n        parsed = { \n            datetime: data,\n            year: data.substring(0, 4),\n            month: data.substring(4, 6),\n            day: data.substring(6, 8),\n            hour: data.substring(8, 10),\n            minute: data.substring(10, 12),\n            second: data.substring(12, 14)\n        };\n        break;\n    }\n        \n    case \"QET\":\n    case \"QEY\":\n    case \"QEM\":\n    case \"QED\": {\n        parsed = { \n            pv_energy: parseInt(data),\n            pv_energy_kwh: (parseInt(data) / 1000).toFixed(2)\n        };\n        break;\n    }\n        \n    case \"QLT\":\n    case \"QLY\":\n    case \"QLM\":\n    case \"QLD\": {\n        parsed = { \n            load_energy: parseInt(data),\n            load_energy_kwh: (parseInt(data) / 1000).toFixed(2)\n        };\n        break;\n    }\n        \n    case \"QDOP\": {\n        const parts = data.split(' ');\n        parsed = {\n            output2_status: parseInt(parts[0]),\n            output2_maybe_status: parseInt(parts[1]),\n            output2_comm_status: parseInt(parts[2]),\n            output2_over_current: parseInt(parts[3]),\n            output2_current: parseFloat(parts[4]),\n            output2_voltage_off: parseFloat(parts[5]),\n            output2_discharge_time_off: parseInt(parts[6]),\n            output2_current_limit: parseInt(parts[7]),\n            battery_recharge_capacity: parseInt(parts[8]),\n            battery_redischarge_capacity: parseInt(parts[9]),\n            battery_under_capacity: parseInt(parts[10]),\n            output2_capacity_off: parseInt(parts[11]),\n            output2_time_on_interval: parseInt(parts[12]),\n            output2_time_off_interval: parseInt(parts[13]),\n            output2_voltage_on: parseFloat(parts[14]),\n            output2_discharge_time_on: parseInt(parts[15]),\n            output2_capacity_on: parseInt(parts[16])\n        };\n        break;\n    }\n        \n    case \"QBEQI\": {\n        const parts = data.split(' ');\n        parsed = {\n            equalization_enabled: parseInt(parts[0]),\n            equalization_time: parseInt(parts[1]),\n            equalization_period: parseInt(parts[2]),\n            equalization_max_current: parseInt(parts[3]),\n            equalization_voltage: parseFloat(parts[5]),\n            equalization_over_time: parseInt(parts[7]),\n            equalization_active: parseInt(parts[8]),\n            equalization_elapse_time: parseInt(parts[9])\n        };\n        break;\n    }\n        \n    default:\n        parsed = { raw: data };\n}\n\n// Stocker les données parsées\nconst currentData = global.get(`inverter_${inverterNum}.data`) || {};\nObject.assign(currentData, parsed);\nglobal.set(`inverter_${inverterNum}.data`, currentData);\nglobal.set(`inverter_${inverterNum}.lastUpdate`, Date.now());\n\n// Préparer le message pour MQTT\nmsg.payload = {\n    inverterNum: inverterNum,\n    command: command,\n    data: parsed,\n    timestamp: new Date().toISOString()\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 420,
+        "wires": [
+            [
+                "06c265136c675788",
+                "3174dd358259cbb8"
+            ]
+        ]
+    },
+    {
+        "id": "3174dd358259cbb8",
+        "type": "debug",
+        "z": "2e93aaba45f794b7",
+        "name": "Debug Parsed",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 890,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "06c265136c675788",
+        "type": "link out",
+        "z": "2e93aaba45f794b7",
+        "name": "→ Publier MQTT",
+        "mode": "link",
+        "links": [
+            "7766334bb21a6e35"
+        ],
+        "x": 895,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "da9ca0a527f740d7",
+        "type": "link in",
+        "z": "2e93aaba45f794b7",
+        "name": "← Commandes MQTT",
+        "links": [
+            "0825835d7632e6e2"
+        ],
+        "x": 135,
+        "y": 600,
+        "wires": [
+            [
+                "3717dd8c1a253257"
+            ]
+        ]
+    },
+    {
+        "id": "3717dd8c1a253257",
+        "type": "function",
+        "z": "2e93aaba45f794b7",
+        "name": "⚙️ Traiter commande param",
+        "func": "const helpers = global.get(\"helpers\");\nconst editableParams = global.get(\"config.editableParams\") || {};\n\nconst command = msg.command;\nconst value = msg.payload;\nconst inverterNum = msg.inverterNum;\n\nif (!editableParams[command]) {\n    node.error(`Commande inconnue: ${command}`);\n    return null;\n}\n\nconst param = editableParams[command];\nlet option = \"\";\n\n// Formatter l'option selon le type\nif (param.entityType === \"select\") {\n    option = param.values[value] || \"\";\n    if (!option) {\n        node.error(`Valeur invalide pour ${command}: ${value}`);\n        return null;\n    }\n} else if (param.entityType === \"number\") {\n    const numValue = parseFloat(value);\n    \n    // Validation\n    if (param.min !== undefined && numValue < param.min) {\n        node.error(`Valeur trop basse: ${numValue} < ${param.min}`);\n        return null;\n    }\n    if (param.max !== undefined && numValue > param.max) {\n        node.error(`Valeur trop haute: ${numValue} > ${param.max}`);\n        return null;\n    }\n    \n    // Formater selon la commande\n    switch(command) {\n        case \"MUCHGC\":\n            option = helpers.formatMUCHGC(numValue);\n            break;\n        case \"MNCHGC\":\n            option = helpers.formatMNCHGC(numValue);\n            break;\n        case \"PBCV\":\n        case \"PBDV\":\n        case \"PBFT\":\n        case \"PSDV\":\n        case \"PCVV\":\n            option = helpers.formatVoltage(numValue);\n            break;\n        case \"PBCC\":\n        case \"PBDC\":\n        case \"PSDC\":\n        case \"PBATMAXDISC\":\n        case \"PCVT\":\n            option = helpers.padNumber(Math.round(numValue), 3);\n            break;\n        default:\n            option = String(numValue);\n    }\n}\n\n// Construire la commande\nconst commandBuffer = helpers.buildVoltronicCommand(command, option);\n\nmsg.payload = commandBuffer;\nmsg.topic = command;\n\nnode.status({ \n    fill: \"yellow\", \n    shape: \"ring\", \n    text: `${command}${option} → Onduleur ${inverterNum}` \n});\n\n// Programmer un refresh QPIRI après 2s\nsetTimeout(() => {\n    const refreshCmd = helpers.buildVoltronicCommand(\"QPIRI\");\n    node.send({\n        payload: refreshCmd,\n        topic: \"QPIRI\",\n        inverterNum: inverterNum,\n        command: \"QPIRI\"\n    });\n}, 2000);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 600,
+        "wires": [
+            [
+                "a06eaeb6da68caf0"
+            ]
+        ]
+    },
+    {
+        "id": "f8c67a719ddd5879",
+        "type": "link in",
+        "z": "9718612b97578ccc",
+        "name": "← Config Init",
+        "links": [
+            "11848d8743ab51f6"
+        ],
+        "x": 135,
+        "y": 100,
+        "wires": [
+            [
+                "b2a9a4b3869c2f48"
+            ]
+        ]
+    },
+    {
+        "id": "b2a9a4b3869c2f48",
+        "type": "function",
+        "z": "9718612b97578ccc",
+        "name": "🔎 Générer Auto-Discovery COMPLÈTE",
+        "func": "// ============================================\n// FONCTION GENERATE_DISCOVERY\n// À copier dans le node \"🔎 Générer Auto-Discovery COMPLÈTE\"\n// ============================================\n\nconst mqttConfig = global.get(\"config.mqtt\") || {};\nconst serialPorts = global.get(\"config.serialPorts\") || [];\nconst editableParams = global.get(\"config.editableParams\") || {};\n\nconst messages = [];\n\n// Pour chaque onduleur\nfor (let i = 0; i < serialPorts.length; i++) {\n    const inverterNum = i + 1;\n    const deviceId = `voltronic_${inverterNum}`;\n    const baseTopic = `${mqttConfig.baseTopic}/${inverterNum}`;\n    const discoveryPrefix = mqttConfig.discoveryPrefix;\n\n    // Device info partagé\n    const device = {\n        identifiers: [deviceId],\n        name: `${mqttConfig.deviceName} ${inverterNum}`,\n        manufacturer: \"Voltronic\",\n        model: \"Axpert MAX\",\n        sw_version: \"2.0\"\n    };\n\n    // ========================================\n    // ONGLET 3 - MONITORING (sensors temps réel)\n    // ========================================\n\n    const monitoringSensors = [\n        // Tensions\n        { key: \"grid_voltage\", name: \"Tension réseau\", unit: \"V\", device_class: \"voltage\", state_class: \"measurement\" },\n        { key: \"ac_output_voltage\", name: \"Tension sortie AC\", unit: \"V\", device_class: \"voltage\", state_class: \"measurement\" },\n        { key: \"battery_voltage\", name: \"Tension batterie\", unit: \"V\", device_class: \"voltage\", state_class: \"measurement\" },\n        { key: \"pv1_input_voltage\", name: \"Tension PV1\", unit: \"V\", device_class: \"voltage\", state_class: \"measurement\" },\n        { key: \"pv2_input_voltage\", name: \"Tension PV2\", unit: \"V\", device_class: \"voltage\", state_class: \"measurement\" },\n        { key: \"bus_voltage\", name: \"Tension bus\", unit: \"V\", device_class: \"voltage\", state_class: \"measurement\" },\n        { key: \"battery_voltage_scc\", name: \"Tension batterie SCC\", unit: \"V\", device_class: \"voltage\", state_class: \"measurement\" },\n\n        // Courants\n        { key: \"battery_charging_current\", name: \"Courant charge batterie\", unit: \"A\", device_class: \"current\", state_class: \"measurement\" },\n        { key: \"battery_discharge_current\", name: \"Courant décharge batterie\", unit: \"A\", device_class: \"current\", state_class: \"measurement\" },\n        { key: \"pv1_input_current\", name: \"Courant PV1\", unit: \"A\", device_class: \"current\", state_class: \"measurement\" },\n        { key: \"pv2_input_current\", name: \"Courant PV2\", unit: \"A\", device_class: \"current\", state_class: \"measurement\" },\n\n        // Puissances\n        { key: \"ac_output_active_power\", name: \"Puissance sortie AC\", unit: \"W\", device_class: \"power\", state_class: \"measurement\" },\n        { key: \"ac_output_apparent_power\", name: \"Puissance apparente sortie\", unit: \"VA\", device_class: \"apparent_power\", state_class: \"measurement\" },\n        { key: \"pv1_power\", name: \"Puissance PV1\", unit: \"W\", device_class: \"power\", state_class: \"measurement\" },\n        { key: \"pv2_power\", name: \"Puissance PV2\", unit: \"W\", device_class: \"power\", state_class: \"measurement\" },\n        { key: \"pv1_charging_power\", name: \"Puissance charge PV1\", unit: \"W\", device_class: \"power\", state_class: \"measurement\" },\n        { key: \"pv2_charging_power\", name: \"Puissance charge PV2\", unit: \"W\", device_class: \"power\", state_class: \"measurement\" },\n        { key: \"battery_power\", name: \"Puissance batterie\", unit: \"W\", device_class: \"power\", state_class: \"measurement\" },\n\n        // Pourcentages\n        { key: \"battery_capacity\", name: \"SoC Batterie\", unit: \"%\", device_class: \"battery\", state_class: \"measurement\" },\n        { key: \"output_load_percent\", name: \"Charge sortie\", unit: \"%\", state_class: \"measurement\" },\n\n        // Fréquences\n        { key: \"grid_frequency\", name: \"Fréquence réseau\", unit: \"Hz\", device_class: \"frequency\", state_class: \"measurement\" },\n        { key: \"ac_output_frequency\", name: \"Fréquence sortie AC\", unit: \"Hz\", device_class: \"frequency\", state_class: \"measurement\" },\n\n        // Température\n        { key: \"inverter_heat_sink_temp\", name: \"Température\", unit: \"°C\", device_class: \"temperature\", state_class: \"measurement\" },\n\n        // Énergies (kWh)\n        { key: \"pv_energy_kwh\", name: \"Énergie PV jour\", unit: \"kWh\", device_class: \"energy\", state_class: \"total_increasing\", icon: \"mdi:solar-power\" },\n        { key: \"load_energy_kwh\", name: \"Énergie conso jour\", unit: \"kWh\", device_class: \"energy\", state_class: \"total_increasing\", icon: \"mdi:home-lightning-bolt\" }\n    ];\n\n    monitoringSensors.forEach(sensor => {\n        const config = {\n            name: sensor.name,\n            unique_id: `${deviceId}_${sensor.key}`,\n            state_topic: `${baseTopic}/state`,\n            value_template: `{{ value_json.${sensor.key} | default(0) }}`,\n            device: device\n        };\n\n        if (sensor.unit) config.unit_of_measurement = sensor.unit;\n        if (sensor.device_class) config.device_class = sensor.device_class;\n        if (sensor.state_class) config.state_class = sensor.state_class;\n        if (sensor.icon) config.icon = sensor.icon;\n\n        messages.push({\n            topic: `${discoveryPrefix}/sensor/${deviceId}/${sensor.key}/config`,\n            payload: JSON.stringify(config),\n            retain: true\n        });\n    });\n\n    // ========================================\n    // ONGLET 1 - DIAGNOSTIC (infos système)\n    // ========================================\n\n    const diagnosticSensors = [\n        { key: \"serial_number\", name: \"Numéro de série\", icon: \"mdi:identifier\" },\n        { key: \"model_name\", name: \"Modèle\", icon: \"mdi:information\" },\n        { key: \"general_model_name\", name: \"Modèle général\", icon: \"mdi:information\" },\n        { key: \"firmware_version\", name: \"Version firmware\", icon: \"mdi:chip\" },\n        { key: \"firmware_version_panel\", name: \"Version firmware panel\", icon: \"mdi:chip\" },\n        { key: \"protocol_id\", name: \"Protocol ID\", icon: \"mdi:protocol\" },\n        { key: \"mode\", name: \"Mode\", icon: \"mdi:power-plug\" },\n        { key: \"warning_status\", name: \"Status warnings\", icon: \"mdi:alert\" },\n        { key: \"flags\", name: \"Flags\", icon: \"mdi:flag\" },\n        { key: \"datetime\", name: \"Date\", icon: \"mdi:calendar-clock\" },\n        { key: \"device_status\", name: \"Status device\", icon: \"mdi:information\" },\n        { key: \"eeprom_version\", name: \"Version EEPROM\", icon: \"mdi:chip\" }\n    ];\n\n    diagnosticSensors.forEach(sensor => {\n        const config = {\n            name: sensor.name,\n            unique_id: `${deviceId}_${sensor.key}`,\n            state_topic: `${baseTopic}/state`,\n            value_template: `{{ value_json.${sensor.key} | default('Unknown') }}`,\n            device: device,\n            entity_category: \"diagnostic\"\n        };\n\n        if (sensor.icon) config.icon = sensor.icon;\n\n        messages.push({\n            topic: `${discoveryPrefix}/sensor/${deviceId}/${sensor.key}/config`,\n            payload: JSON.stringify(config),\n            retain: true\n        });\n    });\n\n    // Sensors diagnostics avec unités\n    const diagnosticSensorsWithUnits = [\n        { key: \"grid_rating_voltage\", name: \"Tension nominale réseau\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"grid_rating_current\", name: \"Courant nominal réseau\", unit: \"A\", device_class: \"current\" },\n        { key: \"ac_output_rating_voltage\", name: \"Tension nominale sortie\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"ac_output_rating_frequency\", name: \"Fréquence nominale sortie\", unit: \"Hz\", device_class: \"frequency\" },\n        { key: \"ac_output_rating_current\", name: \"Courant nominal sortie\", unit: \"A\", device_class: \"current\" },\n        { key: \"ac_output_rating_apparent_power\", name: \"Puissance nominale apparente\", unit: \"VA\", device_class: \"apparent_power\" },\n        { key: \"ac_output_rating_active_power\", name: \"Puissance nominale active\", unit: \"W\", device_class: \"power\" },\n        { key: \"battery_rating_voltage\", name: \"Tension nominale batterie\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"battery_recharge_voltage\", name: \"Tension recharge batterie\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"battery_under_voltage\", name: \"Seuil sous-tension batterie\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"battery_bulk_voltage\", name: \"Tension bulk actuelle\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"battery_float_voltage\", name: \"Tension float actuelle\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"battery_redischarge_voltage\", name: \"Tension redécharge batterie\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"max_ac_charging_current\", name: \"Courant charge AC max actuel\", unit: \"A\", device_class: \"current\" },\n        { key: \"max_charging_current\", name: \"Courant charge max actuel\", unit: \"A\", device_class: \"current\" },\n        { key: \"max_discharging_current\", name: \"Courant décharge max actuel\", unit: \"A\", device_class: \"current\" },\n        { key: \"max_charging_time_cv\", name: \"Temps max charge CV actuel\", unit: \"min\" }\n    ];\n\n    diagnosticSensorsWithUnits.forEach(sensor => {\n        const config = {\n            name: sensor.name,\n            unique_id: `${deviceId}_${sensor.key}`,\n            state_topic: `${baseTopic}/state`,\n            value_template: `{{ value_json.${sensor.key} | default(0) }}`,\n            device: device,\n            entity_category: \"diagnostic\"\n        };\n\n        if (sensor.unit) config.unit_of_measurement = sensor.unit;\n        if (sensor.device_class) config.device_class = sensor.device_class;\n        if (sensor.icon) config.icon = sensor.icon;\n\n        messages.push({\n            topic: `${discoveryPrefix}/sensor/${deviceId}/${sensor.key}/config`,\n            payload: JSON.stringify(config),\n            retain: true\n        });\n    });\n\n    // ========================================\n    // ONGLET 2 - CONFIG (paramètres modifiables)\n    // ========================================\n\n    for (const [cmd, param] of Object.entries(editableParams)) {\n        const uniqueId = `${deviceId}_${cmd.toLowerCase()}`;\n\n        if (param.entityType === \"select\") {\n            const options = Object.keys(param.values);\n\n            messages.push({\n                topic: `${discoveryPrefix}/select/${deviceId}/${cmd}/config`,\n                payload: JSON.stringify({\n                    name: param.name,\n                    unique_id: uniqueId,\n                    state_topic: `${baseTopic}/param/${cmd}`,\n                    command_topic: `${baseTopic}/set/${cmd}`,\n                    options: options,\n                    device: device,\n                    entity_category: \"config\"\n                }),\n                retain: true\n            });\n\n        } else if (param.entityType === \"number\") {\n            const config = {\n                name: param.name,\n                unique_id: uniqueId,\n                state_topic: `${baseTopic}/param/${cmd}`,\n                command_topic: `${baseTopic}/set/${cmd}`,\n                device: device,\n                entity_category: \"config\"\n            };\n\n            if (param.min !== undefined) config.min = param.min;\n            if (param.max !== undefined) config.max = param.max;\n            if (param.step !== undefined) config.step = param.step;\n            if (param.unit) config.unit_of_measurement = param.unit;\n\n            messages.push({\n                topic: `${discoveryPrefix}/number/${deviceId}/${cmd}/config`,\n                payload: JSON.stringify(config),\n                retain: true\n            });\n        }\n    }\n\n    // Bouton \"Régler la date\"\n    messages.push({\n        topic: `${discoveryPrefix}/button/${deviceId}/sync_date/config`,\n        payload: JSON.stringify({\n            name: \"Régler la date\",\n            unique_id: `${deviceId}_sync_date`,\n            command_topic: `${baseTopic}/set/DAT`,\n            payload_press: \"SYNC\",\n            device: device,\n            entity_category: \"config\",\n            icon: \"mdi:calendar-sync\"\n        }),\n        retain: true\n    });\n\n    // Sensors QDOP (2nd output relay) - Config\n    const qdopSensors = [\n        { key: \"output2_status\", name: \"Status sortie 2\", icon: \"mdi:power-socket\" },\n        { key: \"output2_voltage_off\", name: \"Tension coupure sortie 2\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"output2_voltage_on\", name: \"Tension activation sortie 2\", unit: \"V\", device_class: \"voltage\" },\n        { key: \"output2_capacity_off\", name: \"Capacité coupure sortie 2\", unit: \"%\" },\n        { key: \"output2_capacity_on\", name: \"Capacité activation sortie 2\", unit: \"%\" },\n        { key: \"output2_discharge_time_off\", name: \"Temps décharge coupure sortie 2\", unit: \"min\" },\n        { key: \"output2_discharge_time_on\", name: \"Temps décharge activation sortie 2\", unit: \"min\" },\n        { key: \"battery_recharge_capacity\", name: \"Capacité recharge batterie\", unit: \"%\" },\n        { key: \"battery_redischarge_capacity\", name: \"Capacité redécharge batterie\", unit: \"%\" },\n        { key: \"battery_under_capacity\", name: \"Capacité seuil bas batterie\", unit: \"%\" }\n    ];\n\n    qdopSensors.forEach(sensor => {\n        const config = {\n            name: sensor.name,\n            unique_id: `${deviceId}_${sensor.key}`,\n            state_topic: `${baseTopic}/state`,\n            value_template: `{{ value_json.${sensor.key} | default(0) }}`,\n            device: device,\n            entity_category: \"config\"\n        };\n\n        if (sensor.unit) config.unit_of_measurement = sensor.unit;\n        if (sensor.device_class) config.device_class = sensor.device_class;\n        if (sensor.icon) config.icon = sensor.icon;\n\n        messages.push({\n            topic: `${discoveryPrefix}/sensor/${deviceId}/${sensor.key}/config`,\n            payload: JSON.stringify(config),\n            retain: true\n        });\n    });\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${messages.length} entités configurées` });\n\n// Envoyer tous les messages de découverte\nfor (const msg of messages) {\n    node.send({ payload: msg.payload, topic: msg.topic, retain: msg.retain });\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 100,
+        "wires": [
+            [
+                "6b1cd7e555ac3207"
+            ]
+        ]
+    },
+    {
+        "id": "7766334bb21a6e35",
+        "type": "link in",
+        "z": "9718612b97578ccc",
+        "name": "← Données Voltronic",
+        "links": [
+            "06c265136c675788"
+        ],
+        "x": 135,
+        "y": 240,
+        "wires": [
+            [
+                "a279dbe28afdd764"
+            ]
+        ]
+    },
+    {
+        "id": "a279dbe28afdd764",
+        "type": "function",
+        "z": "9718612b97578ccc",
+        "name": "📤 Publier états",
+        "func": "const mqttConfig = global.get(\"config.mqtt\") || {};\nconst inverterNum = msg.payload.inverterNum;\nconst data = msg.payload.data;\n\nconst baseTopic = `${mqttConfig.baseTopic}/${inverterNum}`;\n\n// Récupérer toutes les données de l'onduleur\nconst allData = global.get(`inverter_${inverterNum}.data`) || {};\n\n// Publier l'état complet\nmsg.topic = `${baseTopic}/state`;\nmsg.payload = JSON.stringify(allData);\nmsg.retain = false;\n\nnode.status({ \n    fill: \"green\", \n    shape: \"dot\", \n    text: `Onduleur ${inverterNum}: ${Object.keys(data).length} valeurs` \n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 240,
+        "wires": [
+            [
+                "6b1cd7e555ac3207"
+            ]
+        ]
+    },
+    {
+        "id": "802a3b058c3b776b",
+        "type": "mqtt in",
+        "z": "9718612b97578ccc",
+        "name": "📥 MQTT In (commandes)",
+        "topic": "voltronic/+/set/#",
+        "qos": "0",
+        "datatype": "utf8",
+        "broker": "mqtt_broker",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 180,
+        "y": 380,
+        "wires": [
+            [
+                "b1a3b95fe751e42d"
+            ]
+        ]
+    },
+    {
+        "id": "b1a3b95fe751e42d",
+        "type": "function",
+        "z": "9718612b97578ccc",
+        "name": "⚙️ Traiter commande MQTT",
+        "func": "// Topic format: voltronic/{inverterNum}/set/{COMMAND}\nconst topicParts = msg.topic.split('/');\n\nif (topicParts.length !== 4 || topicParts[0] !== 'voltronic' || topicParts[2] !== 'set') {\n    node.warn(\"Format de topic invalide: \" + msg.topic);\n    return null;\n}\n\nconst inverterNum = parseInt(topicParts[1]);\nconst command = topicParts[3];\nconst value = msg.payload;\n\nif (isNaN(inverterNum) || inverterNum < 1) {\n    node.warn(\"Numéro d'onduleur invalide: \" + topicParts[1]);\n    return null;\n}\n\n// Vérifier que l'onduleur existe\nconst serialPorts = global.get(\"config.serialPorts\") || [];\nif (inverterNum > serialPorts.length) {\n    node.warn(`Onduleur ${inverterNum} non configuré`);\n    return null;\n}\n\n// Préparer le message\nmsg.inverterNum = inverterNum;\nmsg.command = command;\nmsg.payload = value;\n\nnode.status({ \n    fill: \"blue\", \n    shape: \"ring\", \n    text: `${command}=${value} → onduleur ${inverterNum}` \n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 380,
+        "wires": [
+            [
+                "0825835d7632e6e2"
+            ]
+        ]
+    },
+    {
+        "id": "0825835d7632e6e2",
+        "type": "link out",
+        "z": "9718612b97578ccc",
+        "name": "→ Voltronic Cmd",
+        "mode": "link",
+        "links": [
+            "da9ca0a527f740d7"
+        ],
+        "x": 715,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "6b1cd7e555ac3207",
+        "type": "mqtt out",
+        "z": "9718612b97578ccc",
+        "name": "📤 MQTT Out",
+        "topic": "",
+        "qos": "0",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "mqtt_broker",
+        "x": 690,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "a35d4f4f223081ba",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-serialport": "2.0.3"
+        }
+    }
+]
